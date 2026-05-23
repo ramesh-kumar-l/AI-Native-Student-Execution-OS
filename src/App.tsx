@@ -1,32 +1,67 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { StatusBanner } from "./components/StatusBanner";
+import { Sidebar } from "./components/Sidebar";
+import { ProjectsPage } from "./pages/ProjectsPage";
+import { ProjectDetailPage } from "./pages/ProjectDetailPage";
+import { MentorChatPage } from "./pages/MentorChatPage";
+import { AuditLogPage } from "./pages/AuditLogPage";
+import { listProjects, type Project } from "./api";
 
-const DAEMON_URL = "http://127.0.0.1:45678";
-
-interface HealthStatus {
-  status: string;
-  version: string;
-  daemon_ready: boolean;
-}
+export type NavState =
+  | { page: "projects" }
+  | { page: "project-detail"; projectId: string }
+  | { page: "mentor"; conversationId?: string; projectId?: string }
+  | { page: "audit" };
 
 export default function App() {
-  const [health, setHealth] = useState<HealthStatus | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [nav, setNav] = useState<NavState>({ page: "projects" });
+  const [projects, setProjects] = useState<Project[]>([]);
 
-  useEffect(() => {
-    fetch(`${DAEMON_URL}/api/v1/health`)
-      .then((r) => r.json())
-      .then(setHealth)
-      .catch((e) => setError(e.message));
+  const refreshProjects = useCallback(async () => {
+    try {
+      setProjects(await listProjects());
+    } catch {
+      // daemon not yet ready — StatusBanner will surface the state
+    }
   }, []);
 
+  useEffect(() => {
+    refreshProjects();
+  }, [refreshProjects]);
+
   return (
-    <main style={{ fontFamily: "monospace", padding: "2rem" }}>
-      <h1>Cognition OS — Phase 1</h1>
-      {error && <p style={{ color: "red" }}>Daemon unreachable: {error}</p>}
-      {health && (
-        <pre>{JSON.stringify(health, null, 2)}</pre>
-      )}
-      {!health && !error && <p>Connecting to daemon…</p>}
-    </main>
+    <>
+      <StatusBanner />
+      <div className="app-shell">
+        <Sidebar nav={nav} projects={projects} onNav={setNav} />
+        <div className="main-content">
+          {nav.page === "projects" && (
+            <ProjectsPage
+              projects={projects}
+              onRefresh={refreshProjects}
+              onOpenProject={(id) => setNav({ page: "project-detail", projectId: id })}
+              onOpenChat={(projectId) => setNav({ page: "mentor", projectId })}
+            />
+          )}
+          {nav.page === "project-detail" && (
+            <ProjectDetailPage
+              projectId={nav.projectId}
+              projects={projects}
+              onOpenChat={(projectId, conversationId) =>
+                setNav({ page: "mentor", projectId, conversationId })
+              }
+              onBack={() => setNav({ page: "projects" })}
+            />
+          )}
+          {nav.page === "mentor" && (
+            <MentorChatPage
+              initialConversationId={nav.conversationId}
+              projectId={nav.projectId}
+            />
+          )}
+          {nav.page === "audit" && <AuditLogPage />}
+        </div>
+      </div>
+    </>
   );
 }

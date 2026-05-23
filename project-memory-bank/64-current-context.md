@@ -14,16 +14,14 @@
 
 ## What phase we're in
 
-**Phase 1 · Daemon Walking Skeleton** — in progress.
+**Phase 2 · Desktop UI MVP** — in progress.
 
 - Stack ADR: **ADR-0002 ACCEPTED** (Tauri 2.x + Rust + SQLite + Ollama + Axum HTTP/SSE).
-- Application code: **daemon scaffold exists** — see `42-implementation-status.md` for what's built.
-- Memory layers L0+L1+L2: **implemented** (in `src-tauri/src/memory/`).
-- AI orchestrator: **implemented** with OllamaProvider + ClaudeProvider + MockProvider.
-- HTTP IPC: **implemented** — `POST /api/v1/mentor/turn` (SSE streaming), `GET /api/v1/health`, `GET /api/v1/audit/recent`.
-- Smoke test: **written** at `src-tauri/tests/smoke_test.rs` — run with `cargo test -p cognition-daemon`.
-- Frontend: **minimal React placeholder** — shows daemon health status.
-- Phase-gate: **pending exit** — smoke test must pass; engine stubs (Capability, Workflow, Artifact, Trust) pending.
+- Daemon: **fully implemented** — Phase 1 + Phase 2 backend complete.
+- DB: **Phase 2 tables added** — `projects` + `tasks` on top of Phase 1 (L0/L1/L2/audit).
+- API: **15 endpoints** — health, mentor/turn (SSE), audit/recent, CRUD for projects/tasks, conversations/messages.
+- Frontend: **full React UI** — app shell, sidebar, projects, tasks, mentor chat (SSE), audit log, status banner.
+- Phase-gate: **pending exit** — `cargo build` + `npm run build` must pass; full E2E smoke needed.
 
 ## Operating rules for AI sessions
 
@@ -39,17 +37,29 @@
 - **E1** Memory architecture wrong → multi-month rework. Mitigated by investing early in `16-memory-architecture.md` and ADR-0001; Phase 1 implements L0+L1+L2.
 - **E2** Provider abstraction leaks vendor specifics. Mitigated by strict `Provider` trait — engines never call providers directly.
 - **P1** Mentor feels like a chatbot → no switching cost. Mitigated by memory + workflow embeddedness as headline differentiators.
-- **E3** sqlite-vec deferred — L2 uses pure-Rust cosine similarity. Fine for Phase 1 volume; ADR-0003 needed before scale matters.
+- **E3** sqlite-vec deferred — L2 uses pure-Rust cosine similarity. Fine for Phase 2 volume; ADR-0003 needed before scale matters.
 
-## Key source locations (Phase 1)
+## Key source locations (Phase 2)
 
+**Daemon (Rust):**
 - `src-tauri/src/` — Rust daemon source
 - `src-tauri/src/ai/` — provider abstraction + orchestrator
-- `src-tauri/src/memory/` — L0/L1/L2 layers
+- `src-tauri/src/memory/` — L0/L1/L2 layers (L1 includes Project + Task CRUD)
 - `src-tauri/src/engines/mentor.rs` — mentor engine
-- `src-tauri/src/ipc/` — HTTP routes + types
+- `src-tauri/src/ipc/` — HTTP routes + types (15 endpoints)
 - `src-tauri/src/observability/audit.rs` — audit log
 - `src-tauri/tests/smoke_test.rs` — Phase 1 exit-criterion test
+
+**Frontend (React/TypeScript):**
+- `src/api.ts` — typed API client
+- `src/App.tsx` — app shell + `NavState` type
+- `src/components/StatusBanner.tsx` — daemon health polling
+- `src/components/Sidebar.tsx` — navigation + project list
+- `src/pages/ProjectsPage.tsx` — project grid + create modal
+- `src/pages/ProjectDetailPage.tsx` — task CRUD + status cycling
+- `src/pages/MentorChatPage.tsx` — SSE streaming chat
+- `src/pages/AuditLogPage.tsx` — audit log table
+- `src/index.css` — dark-theme CSS design system
 
 ## What to read next
 

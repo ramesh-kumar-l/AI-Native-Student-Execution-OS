@@ -199,4 +199,356 @@ impl L1Store {
             created_at: Utc::now().timestamp_millis(),
         }
     }
+
+    pub async fn list_conversations(&self, limit: u32) -> crate::error::Result<Vec<Conversation>> {
+        let convs = self
+            .db
+            .conn
+            .call(move |conn| {
+                let mut stmt = conn.prepare(
+                    "SELECT id, project_id, title, created_at, updated_at
+                     FROM conversations ORDER BY updated_at DESC LIMIT ?1",
+                )?;
+                let rows = stmt.query_map(rusqlite::params![limit], |row| {
+                    Ok(Conversation {
+                        id: row.get(0)?,
+                        project_id: row.get(1)?,
+                        title: row.get(2)?,
+                        created_at: row.get(3)?,
+                        updated_at: row.get(4)?,
+                    })
+                })?;
+                rows.collect::<rusqlite::Result<Vec<_>>>()
+            })
+            .await?;
+        Ok(convs)
+    }
+}
+
+// ── Project entity ────────────────────────────────────────────────────────────
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Project {
+    pub id: String,
+    pub name: String,
+    pub description: Option<String>,
+    pub status: String,
+    pub created_at: i64,
+    pub updated_at: i64,
+}
+
+// ── Task entity ───────────────────────────────────────────────────────────────
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Task {
+    pub id: String,
+    pub project_id: String,
+    pub title: String,
+    pub description: Option<String>,
+    pub status: String,
+    pub priority: i32,
+    pub due_at: Option<i64>,
+    pub created_at: i64,
+    pub updated_at: i64,
+}
+
+// ── ProjectStore — project + task CRUD on L1Store ─────────────────────────────
+
+impl L1Store {
+    // ── Projects ──────────────────────────────────────────────────────────────
+
+    pub async fn create_project(
+        &self,
+        name: String,
+        description: Option<String>,
+    ) -> crate::error::Result<Project> {
+        let id = Ulid::new().to_string();
+        let now = Utc::now().timestamp_millis();
+        let project = Project {
+            id,
+            name,
+            description,
+            status: "active".to_string(),
+            created_at: now,
+            updated_at: now,
+        };
+        let p = project.clone();
+        self.db
+            .conn
+            .call(move |conn| {
+                conn.execute(
+                    "INSERT INTO projects (id, name, description, status, created_at, updated_at)
+                     VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
+                    rusqlite::params![p.id, p.name, p.description, p.status, p.created_at, p.updated_at],
+                )?;
+                Ok(())
+            })
+            .await?;
+        Ok(project)
+    }
+
+    pub async fn list_projects(&self) -> crate::error::Result<Vec<Project>> {
+        let projects = self
+            .db
+            .conn
+            .call(|conn| {
+                let mut stmt = conn.prepare(
+                    "SELECT id, name, description, status, created_at, updated_at
+                     FROM projects WHERE status != 'archived'
+                     ORDER BY updated_at DESC",
+                )?;
+                let rows = stmt.query_map([], |row| {
+                    Ok(Project {
+                        id: row.get(0)?,
+                        name: row.get(1)?,
+                        description: row.get(2)?,
+                        status: row.get(3)?,
+                        created_at: row.get(4)?,
+                        updated_at: row.get(5)?,
+                    })
+                })?;
+                rows.collect::<rusqlite::Result<Vec<_>>>()
+            })
+            .await?;
+        Ok(projects)
+    }
+
+    pub async fn get_project(&self, id: &str) -> crate::error::Result<Option<Project>> {
+        let id = id.to_string();
+        let result = self
+            .db
+            .conn
+            .call(move |conn| {
+                let mut stmt = conn.prepare(
+                    "SELECT id, name, description, status, created_at, updated_at
+                     FROM projects WHERE id = ?1",
+                )?;
+                let mut rows = stmt.query_map(rusqlite::params![id], |row| {
+                    Ok(Project {
+                        id: row.get(0)?,
+                        name: row.get(1)?,
+                        description: row.get(2)?,
+                        status: row.get(3)?,
+                        created_at: row.get(4)?,
+                        updated_at: row.get(5)?,
+                    })
+                })?;
+                Ok(rows.next().transpose()?)
+            })
+            .await?;
+        Ok(result)
+    }
+
+    pub async fn update_project(
+        &self,
+        id: &str,
+        name: String,
+        description: Option<String>,
+        status: String,
+    ) -> crate::error::Result<Option<Project>> {
+        let id = id.to_string();
+        let now = Utc::now().timestamp_millis();
+        let result = self
+            .db
+            .conn
+            .call(move |conn| {
+                conn.execute(
+                    "UPDATE projects SET name=?1, description=?2, status=?3, updated_at=?4
+                     WHERE id=?5",
+                    rusqlite::params![name, description, status, now, id],
+                )?;
+                let mut stmt = conn.prepare(
+                    "SELECT id, name, description, status, created_at, updated_at
+                     FROM projects WHERE id = ?1",
+                )?;
+                let mut rows = stmt.query_map(rusqlite::params![id], |row| {
+                    Ok(Project {
+                        id: row.get(0)?,
+                        name: row.get(1)?,
+                        description: row.get(2)?,
+                        status: row.get(3)?,
+                        created_at: row.get(4)?,
+                        updated_at: row.get(5)?,
+                    })
+                })?;
+                Ok(rows.next().transpose()?)
+            })
+            .await?;
+        Ok(result)
+    }
+
+    pub async fn delete_project(&self, id: &str) -> crate::error::Result<()> {
+        let id = id.to_string();
+        self.db
+            .conn
+            .call(move |conn| {
+                conn.execute("DELETE FROM projects WHERE id=?1", rusqlite::params![id])?;
+                Ok(())
+            })
+            .await?;
+        Ok(())
+    }
+
+    // ── Tasks ─────────────────────────────────────────────────────────────────
+
+    pub async fn create_task(
+        &self,
+        project_id: String,
+        title: String,
+        description: Option<String>,
+        priority: i32,
+        due_at: Option<i64>,
+    ) -> crate::error::Result<Task> {
+        let id = Ulid::new().to_string();
+        let now = Utc::now().timestamp_millis();
+        let task = Task {
+            id,
+            project_id,
+            title,
+            description,
+            status: "todo".to_string(),
+            priority,
+            due_at,
+            created_at: now,
+            updated_at: now,
+        };
+        let t = task.clone();
+        self.db
+            .conn
+            .call(move |conn| {
+                conn.execute(
+                    "INSERT INTO tasks
+                        (id, project_id, title, description, status, priority, due_at, created_at, updated_at)
+                     VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)",
+                    rusqlite::params![
+                        t.id, t.project_id, t.title, t.description,
+                        t.status, t.priority, t.due_at, t.created_at, t.updated_at
+                    ],
+                )?;
+                Ok(())
+            })
+            .await?;
+        Ok(task)
+    }
+
+    pub async fn list_tasks_for_project(
+        &self,
+        project_id: &str,
+    ) -> crate::error::Result<Vec<Task>> {
+        let project_id = project_id.to_string();
+        let tasks = self
+            .db
+            .conn
+            .call(move |conn| {
+                let mut stmt = conn.prepare(
+                    "SELECT id, project_id, title, description, status, priority, due_at,
+                            created_at, updated_at
+                     FROM tasks WHERE project_id=?1
+                     ORDER BY priority DESC, created_at ASC",
+                )?;
+                let rows = stmt.query_map(rusqlite::params![project_id], |row| {
+                    Ok(Task {
+                        id: row.get(0)?,
+                        project_id: row.get(1)?,
+                        title: row.get(2)?,
+                        description: row.get(3)?,
+                        status: row.get(4)?,
+                        priority: row.get(5)?,
+                        due_at: row.get(6)?,
+                        created_at: row.get(7)?,
+                        updated_at: row.get(8)?,
+                    })
+                })?;
+                rows.collect::<rusqlite::Result<Vec<_>>>()
+            })
+            .await?;
+        Ok(tasks)
+    }
+
+    pub async fn get_task(&self, id: &str) -> crate::error::Result<Option<Task>> {
+        let id = id.to_string();
+        let result = self
+            .db
+            .conn
+            .call(move |conn| {
+                let mut stmt = conn.prepare(
+                    "SELECT id, project_id, title, description, status, priority, due_at,
+                            created_at, updated_at
+                     FROM tasks WHERE id=?1",
+                )?;
+                let mut rows = stmt.query_map(rusqlite::params![id], |row| {
+                    Ok(Task {
+                        id: row.get(0)?,
+                        project_id: row.get(1)?,
+                        title: row.get(2)?,
+                        description: row.get(3)?,
+                        status: row.get(4)?,
+                        priority: row.get(5)?,
+                        due_at: row.get(6)?,
+                        created_at: row.get(7)?,
+                        updated_at: row.get(8)?,
+                    })
+                })?;
+                Ok(rows.next().transpose()?)
+            })
+            .await?;
+        Ok(result)
+    }
+
+    pub async fn update_task(
+        &self,
+        id: &str,
+        title: String,
+        description: Option<String>,
+        status: String,
+        priority: i32,
+        due_at: Option<i64>,
+    ) -> crate::error::Result<Option<Task>> {
+        let id = id.to_string();
+        let now = Utc::now().timestamp_millis();
+        let result = self
+            .db
+            .conn
+            .call(move |conn| {
+                conn.execute(
+                    "UPDATE tasks
+                     SET title=?1, description=?2, status=?3, priority=?4, due_at=?5, updated_at=?6
+                     WHERE id=?7",
+                    rusqlite::params![title, description, status, priority, due_at, now, id],
+                )?;
+                let mut stmt = conn.prepare(
+                    "SELECT id, project_id, title, description, status, priority, due_at,
+                            created_at, updated_at
+                     FROM tasks WHERE id=?1",
+                )?;
+                let mut rows = stmt.query_map(rusqlite::params![id], |row| {
+                    Ok(Task {
+                        id: row.get(0)?,
+                        project_id: row.get(1)?,
+                        title: row.get(2)?,
+                        description: row.get(3)?,
+                        status: row.get(4)?,
+                        priority: row.get(5)?,
+                        due_at: row.get(6)?,
+                        created_at: row.get(7)?,
+                        updated_at: row.get(8)?,
+                    })
+                })?;
+                Ok(rows.next().transpose()?)
+            })
+            .await?;
+        Ok(result)
+    }
+
+    pub async fn delete_task(&self, id: &str) -> crate::error::Result<()> {
+        let id = id.to_string();
+        self.db
+            .conn
+            .call(move |conn| {
+                conn.execute("DELETE FROM tasks WHERE id=?1", rusqlite::params![id])?;
+                Ok(())
+            })
+            .await?;
+        Ok(())
+    }
 }

@@ -2,7 +2,7 @@
 
 > What's actually built vs planned. Single source of truth for "does this exist yet?"
 
-**As of:** 2026-05-23 (Phase 1 scaffold)
+**As of:** 2026-05-23 (Phase 2 scaffold)
 
 ---
 
@@ -24,9 +24,9 @@
 | Tauri config | `src-tauri/tauri.conf.json`, `capabilities/` | ✅ |
 | Error types | `src-tauri/src/error.rs` | ✅ |
 | Config | `src-tauri/src/config.rs` | ✅ |
-| DB migrations (all tables) | `src-tauri/src/db/` | ✅ |
+| DB migrations (L0/L1/L2/audit) | `src-tauri/src/db/migrations.rs` | ✅ |
 | Memory L0 (event log) | `src-tauri/src/memory/l0.rs` | ✅ |
-| Memory L1 (entities) | `src-tauri/src/memory/l1.rs` | ✅ |
+| Memory L1 (conversations + messages) | `src-tauri/src/memory/l1.rs` | ✅ |
 | Memory L2 (vector store) | `src-tauri/src/memory/l2.rs` | ✅ |
 | Provider trait + registry | `src-tauri/src/ai/providers/mod.rs` | ✅ |
 | OllamaProvider | `src-tauri/src/ai/providers/ollama.rs` | ✅ |
@@ -40,20 +40,42 @@
 | AppState + `start()` | `src-tauri/src/lib.rs` | ✅ |
 | Tauri entry point | `src-tauri/src/main.rs` | ✅ |
 | Smoke test | `src-tauri/tests/smoke_test.rs` | ✅ |
-| React frontend (minimal) | `src/` | ✅ |
 
-## Planned (Phase 2+)
+## Built — Phase 2 Desktop UI MVP
+
+| Component | File(s) | Status |
+| --- | --- | --- |
+| DB: projects table | `src-tauri/src/db/migrations.rs` | ✅ |
+| DB: tasks table | `src-tauri/src/db/migrations.rs` | ✅ |
+| L1: Project + Task entity types | `src-tauri/src/memory/l1.rs` | ✅ |
+| L1: Project CRUD (create/list/get/update/delete) | `src-tauri/src/memory/l1.rs` | ✅ |
+| L1: Task CRUD (create/list/get/update/delete) | `src-tauri/src/memory/l1.rs` | ✅ |
+| L1: `list_conversations()` | `src-tauri/src/memory/l1.rs` | ✅ |
+| IPC types: project/task request types | `src-tauri/src/ipc/types.rs` | ✅ |
+| IPC routes: project CRUD (5 endpoints) | `src-tauri/src/ipc/routes.rs` | ✅ |
+| IPC routes: task CRUD (4 endpoints) | `src-tauri/src/ipc/routes.rs` | ✅ |
+| IPC routes: conversation + message listing | `src-tauri/src/ipc/routes.rs` | ✅ |
+| IPC router: all 10 new routes wired | `src-tauri/src/ipc/mod.rs` | ✅ |
+| API client (typed fetch) | `src/api.ts` | ✅ |
+| CSS design system | `src/index.css` | ✅ |
+| App shell + navigation state | `src/App.tsx` | ✅ |
+| StatusBanner (daemon health polling) | `src/components/StatusBanner.tsx` | ✅ |
+| Sidebar (project list + nav) | `src/components/Sidebar.tsx` | ✅ |
+| Projects page (grid + create/archive/delete) | `src/pages/ProjectsPage.tsx` | ✅ |
+| Project detail page (task CRUD + status cycling) | `src/pages/ProjectDetailPage.tsx` | ✅ |
+| Mentor chat page (SSE streaming + history) | `src/pages/MentorChatPage.tsx` | ✅ |
+| Audit log page (table + expandable metadata) | `src/pages/AuditLogPage.tsx` | ✅ |
+
+## Planned (Phase 3+)
 
 | Component | Status |
 | --- | --- |
-| Desktop UI shell | ⏳ Phase 2 |
-| Project CRUD | ⏳ Phase 2 |
-| Mentor chat UI | ⏳ Phase 2 |
 | VSCode extension scaffold | ⏳ Phase 3 |
 | Workflow signal capture | ⏳ Phase 3 |
 | Capability Engine | ⏳ Phase 4 |
 | Artifact Engine | ⏳ Phase 4 |
 | Sync coordinator | ⏳ Phase 5 |
+| sqlite-vec native extension | ⏳ ADR-0003 (Phase 1.5 or Phase 3) |
 
 ---
 

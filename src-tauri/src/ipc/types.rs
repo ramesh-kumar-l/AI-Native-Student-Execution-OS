@@ -1,6 +1,57 @@
 use crate::ai::task::RoutingPreference;
 use serde::{Deserialize, Serialize};
 
+// ── Project request types ─────────────────────────────────────────────────────
+
+#[derive(Debug, Deserialize)]
+pub struct CreateProjectRequest {
+    pub name: String,
+    pub description: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct UpdateProjectRequest {
+    pub name: Option<String>,
+    pub description: Option<String>,
+    pub status: Option<String>,
+}
+
+// ── Task request types ────────────────────────────────────────────────────────
+
+#[derive(Debug, Deserialize)]
+pub struct CreateTaskRequest {
+    pub title: String,
+    pub description: Option<String>,
+    #[serde(default = "default_priority")]
+    pub priority: i32,
+    pub due_at: Option<i64>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct UpdateTaskRequest {
+    pub title: Option<String>,
+    pub description: Option<String>,
+    pub status: Option<String>,
+    pub priority: Option<i32>,
+    pub due_at: Option<i64>,
+}
+
+fn default_priority() -> i32 {
+    1
+}
+
+// ── Query param types ─────────────────────────────────────────────────────────
+
+#[derive(Debug, Deserialize)]
+pub struct LimitQuery {
+    #[serde(default = "default_limit")]
+    pub limit: u32,
+}
+
+fn default_limit() -> u32 {
+    50
+}
+
 /// Inbound request for a single mentor interaction turn.
 #[derive(Debug, Deserialize)]
 pub struct MentorTurnRequest {

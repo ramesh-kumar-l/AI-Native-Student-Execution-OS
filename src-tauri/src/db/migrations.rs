@@ -83,5 +83,37 @@ pub fn run(conn: &Connection) -> rusqlite::Result<()> {
             ON audit_log(created_at DESC);",
     )?;
 
+    // ── Phase 2 · Projects & Tasks ────────────────────────────────────────────
+    conn.execute_batch(
+        "CREATE TABLE IF NOT EXISTS projects (
+            id          TEXT PRIMARY KEY,
+            name        TEXT NOT NULL,
+            description TEXT,
+            status      TEXT NOT NULL DEFAULT 'active'
+                            CHECK(status IN ('active','paused','completed','archived')),
+            created_at  INTEGER NOT NULL,
+            updated_at  INTEGER NOT NULL
+        );
+        CREATE INDEX IF NOT EXISTS idx_projects_status
+            ON projects(status, updated_at DESC);
+
+        CREATE TABLE IF NOT EXISTS tasks (
+            id          TEXT PRIMARY KEY,
+            project_id  TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+            title       TEXT NOT NULL,
+            description TEXT,
+            status      TEXT NOT NULL DEFAULT 'todo'
+                            CHECK(status IN ('todo','in_progress','done')),
+            priority    INTEGER NOT NULL DEFAULT 1,
+            due_at      INTEGER,
+            created_at  INTEGER NOT NULL,
+            updated_at  INTEGER NOT NULL
+        );
+        CREATE INDEX IF NOT EXISTS idx_tasks_project
+            ON tasks(project_id, status, priority DESC);
+        CREATE INDEX IF NOT EXISTS idx_tasks_due
+            ON tasks(due_at) WHERE due_at IS NOT NULL;",
+    )?;
+
     Ok(())
 }
