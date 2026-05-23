@@ -14,11 +14,16 @@
 
 ## What phase we're in
 
-**Phase 0 · Foundation** — memory bank bootstrapped; stack ADR pending.
+**Phase 1 · Daemon Walking Skeleton** — in progress.
 
-- Application code: **none yet** (no daemon, no UI, no extension).
-- Memory bank: **bootstrapped** (this directory).
-- Stack: **awaiting user decision** — see `45-next-steps.md`.
+- Stack ADR: **ADR-0002 ACCEPTED** (Tauri 2.x + Rust + SQLite + Ollama + Axum HTTP/SSE).
+- Application code: **daemon scaffold exists** — see `42-implementation-status.md` for what's built.
+- Memory layers L0+L1+L2: **implemented** (in `src-tauri/src/memory/`).
+- AI orchestrator: **implemented** with OllamaProvider + ClaudeProvider + MockProvider.
+- HTTP IPC: **implemented** — `POST /api/v1/mentor/turn` (SSE streaming), `GET /api/v1/health`, `GET /api/v1/audit/recent`.
+- Smoke test: **written** at `src-tauri/tests/smoke_test.rs` — run with `cargo test -p cognition-daemon`.
+- Frontend: **minimal React placeholder** — shows daemon health status.
+- Phase-gate: **pending exit** — smoke test must pass; engine stubs (Capability, Workflow, Artifact, Trust) pending.
 
 ## Operating rules for AI sessions
 
@@ -31,15 +36,20 @@
 
 ## Top-of-mind risks
 
-- **E1** Memory architecture wrong → multi-month rework. Mitigated by investing early in `16-memory-architecture.md` and ADR-0001.
-- **E2** Provider abstraction leaks vendor specifics. Mitigated by strict TaskSpec contract.
+- **E1** Memory architecture wrong → multi-month rework. Mitigated by investing early in `16-memory-architecture.md` and ADR-0001; Phase 1 implements L0+L1+L2.
+- **E2** Provider abstraction leaks vendor specifics. Mitigated by strict `Provider` trait — engines never call providers directly.
 - **P1** Mentor feels like a chatbot → no switching cost. Mitigated by memory + workflow embeddedness as headline differentiators.
+- **E3** sqlite-vec deferred — L2 uses pure-Rust cosine similarity. Fine for Phase 1 volume; ADR-0003 needed before scale matters.
 
-(Full register: `43-risks.md`.)
+## Key source locations (Phase 1)
 
-## Open decisions blocking Phase 1
-
-Seven stack-level decisions in `45-next-steps.md` (desktop framework, local DB, vector store, local LLM runtime, IPC mechanism, frontend framework, embedding model). Recommendations are documented but not committed; ADR-0002 will formalize once the user decides.
+- `src-tauri/src/` — Rust daemon source
+- `src-tauri/src/ai/` — provider abstraction + orchestrator
+- `src-tauri/src/memory/` — L0/L1/L2 layers
+- `src-tauri/src/engines/mentor.rs` — mentor engine
+- `src-tauri/src/ipc/` — HTTP routes + types
+- `src-tauri/src/observability/audit.rs` — audit log
+- `src-tauri/tests/smoke_test.rs` — Phase 1 exit-criterion test
 
 ## What to read next
 
@@ -51,7 +61,7 @@ Seven stack-level decisions in `45-next-steps.md` (desktop framework, local DB, 
 
 ## When this file is stale
 
-This file should be refreshed at every phase-gate, and whenever stack decisions land. If you're an AI assistant and the contents here disagree with `40-current-phase.md` or `45-next-steps.md`, **update this file in your PR**.
+This file should be refreshed at every phase-gate. If you're an AI assistant and the contents here disagree with `40-current-phase.md` or `45-next-steps.md`, **update this file in the same change**.
 
 ---
 
@@ -60,4 +70,5 @@ This file should be refreshed at every phase-gate, and whenever stack decisions 
 - `README.md` — project README
 - `CLAUDE.md` (project root) — operating rules
 - `project-memory-bank/README.md` — full memory-bank index
+- `project-memory-bank/50-adrs/0002-phase1-stack.md` — ADR-0002 (accepted stack)
 - `project-memory-bank/99-autoprompt-source.md` — verbatim canonical directive

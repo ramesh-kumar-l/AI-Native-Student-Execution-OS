@@ -1,0 +1,62 @@
+[package]
+name = "cognition-daemon"
+version = "0.1.0"
+edition = "2021"
+description = "AI-Native Student Execution OS — local cognition daemon"
+license = "Apache-2.0"
+
+[lib]
+name = "cognition_daemon"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[dependencies]
+# Async runtime
+tokio = { version = "1", features = ["full"] }
+tokio-stream = "0.1"
+futures = "0.3"
+
+# Web framework — HTTP loopback + SSE for IPC (ADR-0002 D-5)
+axum = { version = "0.7", features = ["ws", "macros"] }
+tower-http = { version = "0.5", features = ["cors", "trace"] }
+
+# Desktop framework — Tauri 2.x (ADR-0002 D-1)
+tauri = { version = "2", features = [] }
+
+# Database — SQLite via rusqlite bundled (ADR-0002 D-2)
+rusqlite = { version = "0.31", features = ["bundled"] }
+tokio-rusqlite = "0.5"
+
+# HTTP client — AI provider calls (Ollama, Claude)
+reqwest = { version = "0.12", features = ["json", "stream"] }
+bytes = "1"
+
+# Serialization
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+# Error handling
+thiserror = "1"
+anyhow = "1"
+
+# Structured logging / tracing
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "json", "fmt"] }
+
+# IDs — ULID for sortable, time-ordered unique IDs
+ulid = "1"
+
+# Time
+chrono = { version = "0.4", features = ["serde"] }
+
+# Async trait support
+async-trait = "0.1"
+
+# Platform data dirs
+directories = "5"
+
+[dev-dependencies]
+tokio-test = "0.4"
+tempfile = "3"
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }

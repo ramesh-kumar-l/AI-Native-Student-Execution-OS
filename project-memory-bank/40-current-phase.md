@@ -1,65 +1,77 @@
 # 40 · Current Phase
 
-## Phase 0 · Foundation
+## Phase 1 · Daemon Walking Skeleton
 
 **As of:** 2026-05-23
-**Status:** in progress — memory-bank bootstrapped; stack ADR pending user decision.
+**Status:** In progress — scaffold committed; smoke test written; exit criteria partially met.
 
 ---
 
 ## Phase goal
 
-Establish canonical context, engineering standards, and stack-decision readiness so subsequent phases execute fast and consistently.
+Produce a runnable local daemon with:
+- SQLite storage (L0 event log, L1 entities, L2 vector store)
+- AI orchestrator routing to Ollama (local) and Claude (cloud) through a provider abstraction
+- HTTP loopback + SSE streaming IPC
+- Audit log
+- Smoke test that proves the full mentor-turn path works end-to-end
 
 ---
 
 ## In scope this phase
 
-- [x] Project root scaffolding: `CLAUDE.md`, `README.md`, `.gitignore`
-- [x] `project-memory-bank/` bootstrap with index
-- [x] Strategic files (00–04)
-- [x] Architecture files (10–18): load-bearing files real; scaffolds for the rest
-- [x] Engineering files (20–25)
-- [x] Product files (30–34)
-- [x] Execution files (40–45)
-- [x] Decisions scaffolding (50–53) with first ADR placeholder
-- [x] Compressed-context files (60–64) including `64-current-context.md`
-- [x] AUTOPROMPT source preserved as `99-autoprompt-source.md`
-- [ ] **Stack ADR merged** — user decision pending
+- [x] ADR-0002 accepted — stack formalized (Tauri 2.x, SQLite, Ollama, Axum)
+- [x] Workspace `Cargo.toml` + `src-tauri/Cargo.toml`
+- [x] Database layer: `db/mod.rs` + `db/migrations.rs` (L0/L1/L2/audit tables)
+- [x] Memory Layer L0: append-only event log (`memory/l0.rs`)
+- [x] Memory Layer L1: normalized entities — Conversation + Message (`memory/l1.rs`)
+- [x] Memory Layer L2: vector store with pure-Rust cosine similarity (`memory/l2.rs`)
+- [x] Provider trait + ProviderRegistry (`ai/providers/mod.rs`)
+- [x] OllamaProvider: streaming NDJSON (`ai/providers/ollama.rs`)
+- [x] ClaudeProvider: streaming SSE (`ai/providers/claude.rs`)
+- [x] MockProvider: deterministic canned response for CI (`ai/providers/mock.rs`)
+- [x] AI Orchestrator: routes TaskSpec, emits audit events (`ai/orchestrator.rs`)
+- [x] Mentor Engine: full turn pipeline with L0/L1 persistence (`engines/mentor.rs`)
+- [x] HTTP IPC server: health, mentor/turn (SSE), audit/recent (`ipc/routes.rs`)
+- [x] Audit log (`observability/audit.rs`)
+- [x] AppState wiring + `start()` function for testability (`lib.rs`)
+- [x] Tauri entry point (`main.rs`)
+- [x] Minimal React frontend — daemon health display
+- [x] Smoke test (`tests/smoke_test.rs`)
+- [ ] `cargo test` passes (requires Cargo.lock + dependency resolution)
 - [ ] Phase-gate summary delivered and approved
 
 ---
 
-## Explicitly out of scope (do NOT do this phase)
+## Explicitly out of scope this phase
 
-- Any application code (daemon, desktop UI, VSCode extension)
-- Any sync work
-- Any AI orchestrator implementation
-- Database schema implementation
-- CI pipelines beyond the minimum
-
-These all wait for Phase 1, which requires the stack ADR.
+- Capability, Workflow, Artifact, Trust engines (stubs only)
+- Multi-project support
+- L3 temporal/relational graph
+- L4 compressed summaries
+- Sync / multi-device
+- VSCode extension
+- sqlite-vec native extension (deferred to ADR-0003)
+- Auth, encryption, RBAC
+- Telemetry / metrics pipeline
 
 ---
 
 ## Phase-gate exit criteria
 
-This phase exits when:
-
-1. The user has reviewed and approved the bootstrapped memory bank.
-2. A stack ADR (or short series of ADRs) has been merged covering: desktop framework, local DB, vector store, local LLM runtime, IPC mechanism.
-3. `45-next-steps.md` is updated with a clear Phase-1 plan.
-4. A "Hello, daemon" definition-of-done is documented for Phase 1.
+1. `cargo test -p cognition-daemon` passes (all smoke test assertions green).
+2. `GET /api/v1/health` returns `{"status":"ok","daemon_ready":true}`.
+3. `POST /api/v1/mentor/turn` with a MockProvider streams back ≥1 chunk with `done=true`.
+4. Audit log has entries for `mentor_turn_received`, `ai_call_started`, `ai_call_completed`, `mentor_turn_completed`.
+5. Memory bank updated to reflect Phase 1 state.
 
 ---
 
 ## Risks active this phase
 
-See `43-risks.md`. Key Phase-0 risks:
-
-- Over-spec'ing the architecture before any code reveals what's wrong with it.
-- Stack analysis paralysis — multiple equally-defensible options can stall the decision.
-- Memory-bank content drifting from real implementation in later phases.
+- **E3** sqlite-vec deferred — acceptable; L2 interface unchanged for future swap.
+- **Dependency resolution** — `tokio-rusqlite`, `axum 0.7`, `tauri 2.x` may have version conflicts on first `cargo build`. Expect one iteration to resolve.
+- **Tauri bundling** — we set `bundle.active: false` to avoid icon requirements; change before Phase 2 packaging.
 
 ---
 
@@ -67,5 +79,6 @@ See `43-risks.md`. Key Phase-0 risks:
 
 - [30-roadmap.md](30-roadmap.md)
 - [41-active-tasks.md](41-active-tasks.md)
+- [42-implementation-status.md](42-implementation-status.md)
 - [45-next-steps.md](45-next-steps.md)
-- [43-risks.md](43-risks.md)
+- [50-adrs/0002-phase1-stack.md](50-adrs/0002-phase1-stack.md)
