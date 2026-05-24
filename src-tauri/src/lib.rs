@@ -51,6 +51,7 @@ impl AppState {
         let orchestrator = Arc::new(Orchestrator::new(
             Arc::new(registry),
             Arc::clone(&audit),
+            config.ai.default_local_model.clone(),
         ));
 
         let mentor = Arc::new(MentorEngine::new(

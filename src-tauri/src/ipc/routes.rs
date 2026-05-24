@@ -40,6 +40,16 @@ fn not_found(msg: &str) -> (StatusCode, Json<ApiError>) {
     )
 }
 
+fn bad_request(msg: &str) -> (StatusCode, Json<ApiError>) {
+    (
+        StatusCode::BAD_REQUEST,
+        Json(ApiError {
+            error: msg.to_string(),
+            correlation_id: None,
+        }),
+    )
+}
+
 fn internal_err(e: impl std::fmt::Display) -> (StatusCode, Json<ApiError>) {
     (
         StatusCode::INTERNAL_SERVER_ERROR,
@@ -48,6 +58,24 @@ fn internal_err(e: impl std::fmt::Display) -> (StatusCode, Json<ApiError>) {
             correlation_id: None,
         }),
     )
+}
+
+fn validate_name(s: &str, field: &str, max_len: usize) -> Option<(StatusCode, Json<ApiError>)> {
+    let t = s.trim();
+    if t.is_empty() {
+        return Some(bad_request(&format!("{field} must not be blank")));
+    }
+    if t.len() > max_len {
+        return Some(bad_request(&format!("{field} must be ≤ {max_len} characters")));
+    }
+    None
+}
+
+fn validate_priority(priority: i32) -> Option<(StatusCode, Json<ApiError>)> {
+    if !(1..=5).contains(&priority) {
+        return Some(bad_request("priority must be between 1 and 5"));
+    }
+    None
 }
 
 pub async fn health(State(state): State<AppState>) -> Json<HealthResponse> {
@@ -64,6 +92,10 @@ pub async fn mentor_turn(
     State(state): State<AppState>,
     Json(req): Json<MentorTurnRequest>,
 ) -> impl IntoResponse {
+    if let Some(e) = validate_name(&req.message, "message", 32_000) {
+        return e.into_response();
+    }
+
     let correlation_id = Ulid::new().to_string();
     let conv_id_for_header = req.conversation_id.clone();
 
@@ -161,6 +193,9 @@ pub async fn create_project(
     State(state): State<AppState>,
     Json(req): Json<CreateProjectRequest>,
 ) -> impl IntoResponse {
+    if let Some(e) = validate_name(&req.name, "name", 200) {
+        return e.into_response();
+    }
     match state.memory.l1.create_project(req.name, req.description).await {
         Ok(p) => (StatusCode::CREATED, Json(p)).into_response(),
         Err(e) => {
@@ -191,6 +226,11 @@ pub async fn update_project(
     Path(id): Path<String>,
     Json(req): Json<UpdateProjectRequest>,
 ) -> impl IntoResponse {
+    if let Some(name) = &req.name {
+        if let Some(e) = validate_name(name, "name", 200) {
+            return e.into_response();
+        }
+    }
     let existing = match state.memory.l1.get_project(&id).await {
         Ok(Some(p)) => p,
         Ok(None) => return not_found("project not found").into_response(),
@@ -247,6 +287,12 @@ pub async fn create_task(
     Path(project_id): Path<String>,
     Json(req): Json<CreateTaskRequest>,
 ) -> impl IntoResponse {
+    if let Some(e) = validate_name(&req.title, "title", 200) {
+        return e.into_response();
+    }
+    if let Some(e) = validate_priority(req.priority) {
+        return e.into_response();
+    }
     match state
         .memory
         .l1
@@ -267,6 +313,16 @@ pub async fn update_task(
     Path(id): Path<String>,
     Json(req): Json<UpdateTaskRequest>,
 ) -> impl IntoResponse {
+    if let Some(title) = &req.title {
+        if let Some(e) = validate_name(title, "title", 200) {
+            return e.into_response();
+        }
+    }
+    if let Some(priority) = req.priority {
+        if let Some(e) = validate_priority(priority) {
+            return e.into_response();
+        }
+    }
     let existing = match state.memory.l1.get_task(&id).await {
         Ok(Some(t)) => t,
         Ok(None) => return not_found("task not found").into_response(),

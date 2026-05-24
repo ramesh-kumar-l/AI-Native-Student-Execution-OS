@@ -41,13 +41,14 @@ impl L1Store {
     pub async fn create_conversation(
         &self,
         project_id: Option<String>,
+        title: Option<String>,
     ) -> crate::error::Result<Conversation> {
         let id = Ulid::new().to_string();
         let now = Utc::now().timestamp_millis();
         let conv = Conversation {
             id: id.clone(),
             project_id,
-            title: None,
+            title,
             created_at: now,
             updated_at: now,
         };
@@ -109,6 +110,23 @@ impl L1Store {
                 conn.execute(
                     "UPDATE conversations SET updated_at = ?1 WHERE id = ?2",
                     rusqlite::params![now, id],
+                )?;
+                Ok(())
+            })
+            .await?;
+        Ok(())
+    }
+
+    pub async fn update_conversation_title(&self, id: &str, title: &str) -> crate::error::Result<()> {
+        let id = id.to_string();
+        let title = title.to_string();
+        let now = Utc::now().timestamp_millis();
+        self.db
+            .conn
+            .call(move |conn| {
+                conn.execute(
+                    "UPDATE conversations SET title = ?1, updated_at = ?2 WHERE id = ?3",
+                    rusqlite::params![title, now, id],
                 )?;
                 Ok(())
             })

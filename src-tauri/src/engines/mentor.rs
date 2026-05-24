@@ -235,7 +235,8 @@ impl MentorEngine {
         &self,
         input: &MentorTurnInput,
     ) -> Result<String, DaemonError> {
-        let conv = self.memory.l1.create_conversation(input.project_id.clone()).await?;
+        let title = Some(derive_conversation_title(&input.message));
+        let conv = self.memory.l1.create_conversation(input.project_id.clone(), title).await?;
         self.memory.l0.append_typed(
             &EventKind::ConversationCreated { conversation_id: conv.id.clone() },
             &input.correlation_id,
@@ -243,4 +244,17 @@ impl MentorEngine {
         ).await?;
         Ok(conv.id)
     }
+}
+
+/// Derive a short display title from the first user message.
+/// Truncates at the last word boundary before 60 chars.
+fn derive_conversation_title(message: &str) -> String {
+    let trimmed = message.trim();
+    if trimmed.chars().count() <= 60 {
+        return trimmed.to_string();
+    }
+    let cut: String = trimmed.chars().take(60).collect();
+    cut.rsplit_once(' ')
+        .map(|(left, _)| left.to_string())
+        .unwrap_or(cut)
 }

@@ -107,12 +107,37 @@
 | Sidebar.tsx: Capability + Artifacts nav links | `src/components/Sidebar.tsx` | ✅ |
 | CSS: capability + artifacts styles | `src/index.css` | ✅ |
 
-## Planned (Phase 5+)
+## Built — Phase 5 Sync + Trust Polish
+
+| Component | File(s) | Status |
+| --- | --- | --- |
+| Crypto: AES-256-GCM + Argon2id | `src-tauri/src/crypto/mod.rs` | ✅ |
+| Sync coordinator (export/import + encryption) | `src-tauri/src/sync/mod.rs` | ✅ |
+| Trust engine (health + lineage) | `src-tauri/src/engines/trust.rs` | ✅ |
+| IPC: 5 new endpoints (trust + sync) | `src-tauri/src/ipc/routes.rs` | ✅ |
+| Trust page (health dashboard + lineage) | `src/pages/TrustPage.tsx` | ✅ |
+| Sync page (export/import + passphrase UI) | `src/pages/SyncPage.tsx` | ✅ |
+| Tauri bundling enabled | `src-tauri/tauri.conf.json` | ✅ |
+| ADR-0003 (sqlite-vec deferred) | `project-memory-bank/50-adrs/0003-sqlite-vec.md` | ✅ |
+| Mobile scaffold | `mobile/README.md` | ✅ |
+
+## Built — TD-02 + TD-04 + TD-05 (Tier 1 hardening)
+
+| Component | File(s) | Status |
+| --- | --- | --- |
+| Ollama model config-driven (not hardcoded) | `src-tauri/src/ai/orchestrator.rs`, `src-tauri/src/lib.rs` | ✅ |
+| Conversation title auto-derived from first message | `src-tauri/src/engines/mentor.rs`, `src-tauri/src/memory/l1.rs` | ✅ |
+| L1: `update_conversation_title()` added | `src-tauri/src/memory/l1.rs` | ✅ |
+| Input validation on all mutation endpoints | `src-tauri/src/ipc/routes.rs` | ✅ |
+
+## Planned
 
 | Component | Status |
 | --- | --- |
-| Sync coordinator | ⏳ Phase 5 |
-| sqlite-vec native extension | ⏳ ADR-0003 (Phase 1.5 or Phase 5) |
+| sqlite-vec native extension | ⏳ TD-01 (ADR-0003 deferred — investigate .dll sidecar first) |
+| Phase 6 Mobile | ⏳ Capacitor.js + Tauri mobile — scaffold in mobile/README.md |
+| Auth / RBAC | ⏳ Post-mobile |
+| Cloud sync relay | ⏳ Post-mobile |
 
 ---
 

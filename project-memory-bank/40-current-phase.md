@@ -1,9 +1,15 @@
 # 40 · Current Phase
 
-## Phase 5 · Sync + Trust Polish
+## Phase 5 · Sync + Trust Polish + Tier 1 Hardening
 
 **As of:** 2026-05-24
 **Status:** COMPLETE — all exit criteria met (cargo build ✅, cargo test ✅, npm run build ✅).
+
+### Tier 1 hardening (TD-02, TD-04, TD-05) — completed same session
+
+- **TD-02 (Real Ollama):** `OllamaProvider` was already wired for non-test mode. Fixed: `Orchestrator` now reads `config.ai.default_local_model` (env `DEFAULT_LOCAL_MODEL`, default `llama3.2`) instead of hardcoding the model name.
+- **TD-04 (Conversation titles):** `create_conversation` now derives a title from the first 60 chars of the user message (truncated at word boundary). `L1Store::create_conversation` accepts `Option<String>` title. New `update_conversation_title` method added to L1Store for future AI-title generation.
+- **TD-05 (Input validation):** All mutation IPC handlers validate at system boundary: project name (1–200 chars), task title (1–200 chars), task priority (1–5), mentor message (1–32 000 chars). Returns `400 BAD_REQUEST` with an `ApiError` body on violation.
 
 ---
 

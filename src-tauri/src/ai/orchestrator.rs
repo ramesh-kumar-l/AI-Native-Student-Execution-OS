@@ -16,11 +16,16 @@ use super::providers::ProviderRegistry;
 pub struct Orchestrator {
     registry: Arc<ProviderRegistry>,
     audit: Arc<AuditLog>,
+    default_local_model: String,
 }
 
 impl Orchestrator {
-    pub fn new(registry: Arc<ProviderRegistry>, audit: Arc<AuditLog>) -> Self {
-        Self { registry, audit }
+    pub fn new(
+        registry: Arc<ProviderRegistry>,
+        audit: Arc<AuditLog>,
+        default_local_model: String,
+    ) -> Self {
+        Self { registry, audit, default_local_model }
     }
 
     /// Route the task and return a streaming response.
@@ -137,7 +142,7 @@ impl Orchestrator {
 
     fn default_model_for(&self, provider_name: &str) -> String {
         match provider_name {
-            "ollama" => "llama3.2".to_string(),
+            "ollama" => self.default_local_model.clone(),
             "claude" => "claude-sonnet-4-6".to_string(),
             "mock" => "mock-model".to_string(),
             other => other.to_string(),
