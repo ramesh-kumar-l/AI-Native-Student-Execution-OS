@@ -160,7 +160,7 @@ impl AuditLog {
                             .and_then(|s| serde_json::from_str(&s).ok()),
                     })
                 })?;
-                rows.collect::<rusqlite::Result<Vec<_>>>()
+                rows.collect::<rusqlite::Result<Vec<_>>>().map_err(Into::into)
             })
             .await?;
         Ok(rows)

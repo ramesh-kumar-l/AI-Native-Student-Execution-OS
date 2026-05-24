@@ -7,7 +7,7 @@
 /// Set `TEST_REAL_OLLAMA=1` to exercise a real Ollama instance.
 use std::time::Duration;
 
-use cognition_daemon::{config::Config, start};
+use cognition_daemon_lib::{config::Config, start};
 
 #[tokio::test]
 async fn smoke_mentor_turn_streams_response() {

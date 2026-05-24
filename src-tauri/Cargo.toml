@@ -6,7 +6,7 @@ description = "AI-Native Student Execution OS — local cognition daemon"
 license = "Apache-2.0"
 
 [lib]
-name = "cognition_daemon"
+name = "cognition_daemon_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [dependencies]

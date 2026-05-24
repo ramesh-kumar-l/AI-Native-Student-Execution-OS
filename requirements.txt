@@ -1,0 +1,32 @@
+# AI-Native Student Execution OS dependency requirements
+#
+# This repository is a JavaScript / TypeScript + Rust project.
+# It does not currently require any Python packages to be installed.
+#
+# If you are running `pip install -r requirements.txt`, this file is intentionally
+# a comment-only requirements file so that pip can succeed without installing
+# any packages.
+#
+# The actual dependency installation steps for this project are:
+#   1. Install Node.js and npm.
+#   2. Install the Rust toolchain with cargo.
+#   3. Run `npm install` in the repo root.
+#   4. Run `cargo build --manifest-path src-tauri/Cargo.toml`.
+#
+# Frontend dependencies are managed through package.json and npm.
+# Rust backend dependencies are managed through src-tauri/Cargo.toml.
+#
+# System prerequisites
+# --------------------
+# - Node.js 20+ and npm
+# - Rust toolchain with cargo
+# - Tauri prerequisites on Windows (Visual Studio Build Tools, Windows SDK)
+# - Optional: local Ollama or other AI provider for local AI testing
+#
+# Optional runtime configuration
+# ------------------------------
+# - DAEMON_TEST_MODE=1           # enable mock AI provider mode for local development
+# - DAEMON_PORT=<port>           # override the daemon IPC port (default 45678)
+# - OLLAMA_BASE_URL=<url>        # local Ollama HTTP endpoint (default http://localhost:11434)
+# - ANTHROPIC_API_KEY=<key>      # enable Claude cloud provider support
+# - DEFAULT_LOCAL_MODEL=<model>  # override default local model (default llama3.2)

@@ -129,7 +129,7 @@ impl L0Store {
                         created_at: row.get(5)?,
                     })
                 })?;
-                rows.collect::<rusqlite::Result<Vec<_>>>()
+                rows.collect::<rusqlite::Result<Vec<_>>>().map_err(Into::into)
             })
             .await?;
         Ok(events)

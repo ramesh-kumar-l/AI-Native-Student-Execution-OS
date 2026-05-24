@@ -173,7 +173,7 @@ impl L1Store {
                         created_at: row.get(7)?,
                     })
                 })?;
-                rows.collect::<rusqlite::Result<Vec<_>>>()
+                rows.collect::<rusqlite::Result<Vec<_>>>().map_err(Into::into)
             })
             .await?;
         Ok(messages)
@@ -218,7 +218,7 @@ impl L1Store {
                         updated_at: row.get(4)?,
                     })
                 })?;
-                rows.collect::<rusqlite::Result<Vec<_>>>()
+                rows.collect::<rusqlite::Result<Vec<_>>>().map_err(Into::into)
             })
             .await?;
         Ok(convs)
@@ -307,7 +307,7 @@ impl L1Store {
                         updated_at: row.get(5)?,
                     })
                 })?;
-                rows.collect::<rusqlite::Result<Vec<_>>>()
+                Ok(rows.collect::<rusqlite::Result<Vec<_>>>()?)
             })
             .await?;
         Ok(projects)
@@ -459,7 +459,7 @@ impl L1Store {
                         updated_at: row.get(8)?,
                     })
                 })?;
-                rows.collect::<rusqlite::Result<Vec<_>>>()
+                rows.collect::<rusqlite::Result<Vec<_>>>().map_err(Into::into)
             })
             .await?;
         Ok(tasks)
