@@ -130,12 +130,30 @@
 | L1: `update_conversation_title()` added | `src-tauri/src/memory/l1.rs` | ✅ |
 | Input validation on all mutation endpoints | `src-tauri/src/ipc/routes.rs` | ✅ |
 
+## Built — Phase 6 Foundation (TD-01 + Mobile)
+
+| Component | File(s) | Status |
+| --- | --- | --- |
+| DB: vec_embedding_map table | `src-tauri/src/db/migrations.rs` | ✅ |
+| DB: run_vec() for vec_embeddings virtual table | `src-tauri/src/db/migrations.rs` | ✅ (DLL-gated) |
+| L2: dual-path search (KNN + cosine fallback) | `src-tauri/src/memory/l2.rs` | ✅ |
+| L2: try_insert_vec dual-write | `src-tauri/src/memory/l2.rs` | ✅ |
+| ADR-0004: sqlite-vec Windows blocker documented | `project-memory-bank/50-adrs/0004-*.md` | ✅ |
+| Mobile CSS responsive design (≤768 px) | `src/index.css` | ✅ |
+| BottomNav component (5 primary items) | `src/components/BottomNav.tsx` | ✅ |
+| App.tsx: useIsMobile hook + conditional nav | `src/App.tsx` | ✅ |
+| capacitor.config.ts scaffold | `capacitor.config.ts` | ✅ |
+| ADR-0005: Mobile build pipeline decision | `project-memory-bank/50-adrs/0005-*.md` | ✅ |
+
 ## Planned
 
 | Component | Status |
 | --- | --- |
-| sqlite-vec native extension | ⏳ TD-01 (ADR-0003 deferred — investigate .dll sidecar first) |
-| Phase 6 Mobile | ⏳ Capacitor.js + Tauri mobile — scaffold in mobile/README.md |
+| sqlite-vec DLL sidecar (Windows) | ⏳ TD-01 remaining — download DLL + Tauri sidecar bundling (ADR-0004) |
+| OR: pure-Rust HNSW via `instant-distance` | ⏳ Alternative to DLL approach (ADR-0004) |
+| `npm run tauri android init` | ⏳ Requires Android SDK + NDK |
+| `npm run tauri ios init` | ⏳ Requires macOS + Xcode |
+| Capacitor package install | ⏳ `npm install @capacitor/core ...` (post-SDK-setup) |
 | Auth / RBAC | ⏳ Post-mobile |
 | Cloud sync relay | ⏳ Post-mobile |
 

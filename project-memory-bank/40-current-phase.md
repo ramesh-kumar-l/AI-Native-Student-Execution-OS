@@ -1,5 +1,26 @@
 # 40 · Current Phase
 
+## Phase 6 Foundation · TD-01 Architecture + Mobile
+
+**As of:** 2026-05-24
+**Status:** COMPLETE — all exit criteria met (cargo build ✅, cargo test ✅, npm run build ✅).
+
+### TD-01 (Vector search architecture) — done
+- Dual-path L2Store: sqlite-vec KNN fast-path (DLL-gated) + cosine-scan fallback
+- `vec_embedding_map` table added to regular migrations (no extension required)
+- `run_vec()` creates `vec_embeddings` virtual table when extension is loaded at runtime
+- Windows MSVC linker blocks static sqlite-vec compilation (documented ADR-0004)
+- Fast-path slot ready for DLL sidecar OR pure-Rust HNSW (`instant-distance`)
+
+### Phase 6 Mobile CSS + scaffold — done
+- `BottomNav.tsx`: 5-item primary nav (Projects, Mentor, Skills, Artifacts, Sync)
+- `useIsMobile()` hook in App.tsx: sidebar at >768 px, bottom nav at ≤768 px
+- `index.css`: mobile media query, safe-area padding, single-column grid, touch targets
+- `capacitor.config.ts`: Capacitor 6.x config scaffold for future native API bridge
+- ADR-0005: Mobile build pipeline documented (Tauri Mobile + Capacitor dual-layer)
+
+---
+
 ## Phase 5 · Sync + Trust Polish + Tier 1 Hardening
 
 **As of:** 2026-05-24

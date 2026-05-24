@@ -1125,3 +1125,98 @@ select {
   font-size: 14px;
   color: var(--text-muted);
 }
+
+/* ── Mobile / Bottom Nav (Phase 6) ─────────────────────────────────────────── */
+:root {
+  --bottom-nav-h: 58px;
+}
+
+.bottom-nav {
+  display: none;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: var(--bottom-nav-h);
+  background: var(--bg-surface);
+  border-top: 1px solid var(--border);
+  z-index: 100;
+  /* safe area for devices with home-indicator bar */
+  padding-bottom: env(safe-area-inset-bottom, 0);
+}
+
+.bottom-nav-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  min-height: 44px;
+  color: var(--text-muted);
+  font-size: 10px;
+  letter-spacing: 0.02em;
+  transition: color 0.15s;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.bottom-nav-item.active {
+  color: var(--accent);
+}
+
+.bottom-nav-icon {
+  font-size: 20px;
+  line-height: 1;
+}
+
+.bottom-nav-label {
+  font-size: 10px;
+}
+
+/* ── Mobile breakpoint ≤ 768 px ─────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  :root {
+    --sidebar-w: 0px;
+  }
+
+  .sidebar {
+    display: none;
+  }
+
+  .bottom-nav {
+    display: flex;
+  }
+
+  /* Push content above bottom nav */
+  .main-content--mobile {
+    padding-bottom: calc(var(--bottom-nav-h) + env(safe-area-inset-bottom, 0));
+  }
+
+  /* Single-column project grid on mobile */
+  .projects-grid {
+    grid-template-columns: 1fr;
+  }
+
+  /* Larger touch targets */
+  .btn {
+    min-height: 44px;
+  }
+
+  /* Full-width modal on small screens */
+  .modal-card {
+    width: 100%;
+    max-width: 100%;
+    margin: 0;
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    position: fixed;
+    bottom: var(--bottom-nav-h);
+    left: 0;
+    right: 0;
+  }
+
+  /* Stack task list more vertically */
+  .task-row {
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+}

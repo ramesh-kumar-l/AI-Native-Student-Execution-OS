@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { StatusBanner } from "./components/StatusBanner";
 import { Sidebar } from "./components/Sidebar";
+import { BottomNav } from "./components/BottomNav";
 import { ProjectsPage } from "./pages/ProjectsPage";
 import { ProjectDetailPage } from "./pages/ProjectDetailPage";
 import { MentorChatPage } from "./pages/MentorChatPage";
@@ -21,9 +22,20 @@ export type NavState =
   | { page: "trust" }
   | { page: "sync" };
 
+function useIsMobile(): boolean {
+  const [mobile, setMobile] = useState(() => window.innerWidth <= 768);
+  useEffect(() => {
+    const fn = () => setMobile(window.innerWidth <= 768);
+    window.addEventListener("resize", fn);
+    return () => window.removeEventListener("resize", fn);
+  }, []);
+  return mobile;
+}
+
 export default function App() {
   const [nav, setNav] = useState<NavState>({ page: "projects" });
   const [projects, setProjects] = useState<Project[]>([]);
+  const isMobile = useIsMobile();
 
   const refreshProjects = useCallback(async () => {
     try {
@@ -41,8 +53,10 @@ export default function App() {
     <>
       <StatusBanner />
       <div className="app-shell">
-        <Sidebar nav={nav} projects={projects} onNav={setNav} />
-        <div className="main-content">
+        {!isMobile && (
+          <Sidebar nav={nav} projects={projects} onNav={setNav} />
+        )}
+        <div className={`main-content${isMobile ? " main-content--mobile" : ""}`}>
           {nav.page === "projects" && (
             <ProjectsPage
               projects={projects}
@@ -75,6 +89,7 @@ export default function App() {
           {nav.page === "trust" && <TrustPage />}
           {nav.page === "sync" && <SyncPage />}
         </div>
+        {isMobile && <BottomNav nav={nav} onNav={setNav} />}
       </div>
     </>
   );

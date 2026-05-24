@@ -133,6 +133,16 @@ pub fn run(conn: &Connection) -> rusqlite::Result<()> {
             ON workflow_signals(created_at DESC);",
     )?;
 
+    // ── Phase 6 · Vec embedding map (regular SQL; no extension required) ────
+    conn.execute_batch(
+        "CREATE TABLE IF NOT EXISTS vec_embedding_map (
+            vec_rowid    INTEGER PRIMARY KEY,
+            embedding_id TEXT NOT NULL UNIQUE REFERENCES embeddings(id) ON DELETE CASCADE
+        );
+        CREATE INDEX IF NOT EXISTS idx_vec_map
+            ON vec_embedding_map(embedding_id);",
+    )?;
+
     // ── Phase 4 · Capability scores & Artifacts ──────────────────────────────
     conn.execute_batch(
         "CREATE TABLE IF NOT EXISTS capability_scores (
@@ -165,4 +175,15 @@ pub fn run(conn: &Connection) -> rusqlite::Result<()> {
     )?;
 
     Ok(())
+}
+
+/// Create the sqlite-vec virtual table. Requires the sqlite-vec extension to
+/// already be loaded (via sqlite3_auto_extension in db::mod). Called separately
+/// from run() so failures degrade gracefully without blocking startup.
+pub fn run_vec(conn: &Connection) -> rusqlite::Result<()> {
+    conn.execute_batch(
+        "CREATE VIRTUAL TABLE IF NOT EXISTS vec_embeddings USING vec0(
+             embedding float[768]
+         );",
+    )
 }
