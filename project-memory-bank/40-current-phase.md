@@ -1,9 +1,9 @@
 # 40 · Current Phase
 
-## Phase 2 · Desktop UI MVP
+## Phase 3 · VSCode Capability Intelligence Layer
 
-**As of:** 2026-05-23
-**Status:** In progress — daemon extended; full React UI scaffolded.
+**As of:** 2026-05-24
+**Status:** In progress — daemon extended with WebSocket + signal storage; VSCode extension scaffolded.
 
 ---
 

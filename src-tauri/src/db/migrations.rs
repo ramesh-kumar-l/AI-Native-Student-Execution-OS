@@ -115,5 +115,23 @@ pub fn run(conn: &Connection) -> rusqlite::Result<()> {
             ON tasks(due_at) WHERE due_at IS NOT NULL;",
     )?;
 
+    // ── Phase 3 · Workflow signals from VSCode ───────────────────────────────
+    conn.execute_batch(
+        "CREATE TABLE IF NOT EXISTS workflow_signals (
+            id          TEXT PRIMARY KEY,
+            project_id  TEXT,
+            signal_type TEXT NOT NULL,
+            file_path   TEXT,
+            language    TEXT,
+            payload     TEXT NOT NULL DEFAULT '{}',
+            source      TEXT NOT NULL DEFAULT 'vscode',
+            created_at  INTEGER NOT NULL
+        );
+        CREATE INDEX IF NOT EXISTS idx_signals_project
+            ON workflow_signals(project_id, created_at DESC);
+        CREATE INDEX IF NOT EXISTS idx_signals_recent
+            ON workflow_signals(created_at DESC);",
+    )?;
+
     Ok(())
 }

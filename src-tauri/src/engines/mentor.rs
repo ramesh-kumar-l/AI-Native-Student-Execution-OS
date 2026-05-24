@@ -1,6 +1,7 @@
 /// Mentor engine — orchestrates a single mentor interaction turn.
 /// Assembles context from memory, creates a TaskSpec, calls the orchestrator,
 /// persists the assembled response to L0+L1, emits audit records.
+use chrono::{DateTime, Utc};
 use futures::StreamExt;
 use std::sync::Arc;
 use tokio::sync::mpsc;
@@ -89,7 +90,7 @@ impl MentorEngine {
         let history = self.memory.l1
             .messages_for_conversation(&conversation_id, 20).await?;
 
-        let chat_messages: Vec<ChatMessage> = history.iter().map(|m| ChatMessage {
+        let mut chat_messages: Vec<ChatMessage> = history.iter().map(|m| ChatMessage {
             role: match m.role.as_str() {
                 "assistant" => MessageRole::Assistant,
                 "system" => MessageRole::System,
@@ -97,6 +98,35 @@ impl MentorEngine {
             },
             content: m.content.clone(),
         }).collect();
+
+        // 4b. Inject recent workflow signals as a system message when a project is set.
+        //     This gives the AI live context about what the user is actively working on.
+        if let Some(ref project_id) = input.project_id {
+            let signals = self.memory.l1
+                .recent_signals(Some(project_id), 10).await
+                .unwrap_or_default();
+            if !signals.is_empty() {
+                let lines: Vec<String> = signals.iter().map(|s| {
+                    let ts = DateTime::<Utc>::from_timestamp_millis(s.created_at)
+                        .map(|dt| dt.format("%H:%M").to_string())
+                        .unwrap_or_default();
+                    let file = s.file_path.as_deref().unwrap_or("?");
+                    let lang = s.language.as_deref()
+                        .map(|l| format!(" ({})", l))
+                        .unwrap_or_default();
+                    format!("- [{}] {} → {}{}", ts, s.signal_type, file, lang)
+                }).collect();
+                let ctx = format!(
+                    "Current workflow context (recent VSCode activity, newest last):\n{}",
+                    lines.join("\n")
+                );
+                // Prepend as system message so it seats before the conversation history.
+                chat_messages.insert(0, ChatMessage {
+                    role: MessageRole::System,
+                    content: ctx,
+                });
+            }
+        }
 
         // 5. Build TaskSpec.
         let task = TaskSpec {

@@ -552,3 +552,109 @@ impl L1Store {
         Ok(())
     }
 }
+
+// ── WorkflowSignal entity ─────────────────────────────────────────────────────
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct WorkflowSignal {
+    pub id: String,
+    pub project_id: Option<String>,
+    pub signal_type: String,
+    pub file_path: Option<String>,
+    pub language: Option<String>,
+    pub payload: serde_json::Value,
+    pub source: String,
+    pub created_at: i64,
+}
+
+impl L1Store {
+    pub async fn record_signal(
+        &self,
+        signal_type: String,
+        project_id: Option<String>,
+        file_path: Option<String>,
+        language: Option<String>,
+        payload: serde_json::Value,
+        source: String,
+    ) -> crate::error::Result<WorkflowSignal> {
+        let id = Ulid::new().to_string();
+        let now = Utc::now().timestamp_millis();
+        let payload_str = serde_json::to_string(&payload).unwrap_or_else(|_| "{}".to_string());
+        let signal = WorkflowSignal {
+            id: id.clone(),
+            project_id: project_id.clone(),
+            signal_type: signal_type.clone(),
+            file_path: file_path.clone(),
+            language: language.clone(),
+            payload,
+            source: source.clone(),
+            created_at: now,
+        };
+        self.db
+            .conn
+            .call(move |conn| {
+                conn.execute(
+                    "INSERT INTO workflow_signals
+                        (id, project_id, signal_type, file_path, language, payload, source, created_at)
+                     VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
+                    rusqlite::params![
+                        id, project_id, signal_type, file_path, language,
+                        payload_str, source, now
+                    ],
+                )?;
+                Ok(())
+            })
+            .await?;
+        Ok(signal)
+    }
+
+    pub async fn recent_signals(
+        &self,
+        project_id: Option<&str>,
+        limit: u32,
+    ) -> crate::error::Result<Vec<WorkflowSignal>> {
+        let project_id = project_id.map(|s| s.to_string());
+        let signals = self
+            .db
+            .conn
+            .call(move |conn| {
+                let rows: Vec<WorkflowSignal> = if let Some(pid) = project_id {
+                    let mut stmt = conn.prepare(
+                        "SELECT id, project_id, signal_type, file_path, language,
+                                payload, source, created_at
+                         FROM workflow_signals WHERE project_id=?1
+                         ORDER BY created_at DESC LIMIT ?2",
+                    )?;
+                    stmt.query_map(rusqlite::params![pid, limit], signal_from_row)?
+                        .collect::<rusqlite::Result<Vec<_>>>()?
+                } else {
+                    let mut stmt = conn.prepare(
+                        "SELECT id, project_id, signal_type, file_path, language,
+                                payload, source, created_at
+                         FROM workflow_signals
+                         ORDER BY created_at DESC LIMIT ?1",
+                    )?;
+                    stmt.query_map(rusqlite::params![limit], signal_from_row)?
+                        .collect::<rusqlite::Result<Vec<_>>>()?
+                };
+                Ok(rows)
+            })
+            .await?;
+        Ok(signals)
+    }
+}
+
+fn signal_from_row(row: &rusqlite::Row<'_>) -> rusqlite::Result<WorkflowSignal> {
+    let payload_str: String = row.get(5)?;
+    Ok(WorkflowSignal {
+        id: row.get(0)?,
+        project_id: row.get(1)?,
+        signal_type: row.get(2)?,
+        file_path: row.get(3)?,
+        language: row.get(4)?,
+        payload: serde_json::from_str(&payload_str)
+            .unwrap_or(serde_json::Value::Object(Default::default())),
+        source: row.get(6)?,
+        created_at: row.get(7)?,
+    })
+}

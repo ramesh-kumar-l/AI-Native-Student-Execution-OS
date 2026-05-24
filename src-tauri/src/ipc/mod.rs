@@ -46,6 +46,9 @@ pub fn create_router(state: AppState) -> Router {
         )
         // ── Audit ─────────────────────────────────────────────────────────────
         .route("/api/v1/audit/recent", get(routes::audit_recent))
+        // ── Phase 3 · VSCode workflow signals ─────────────────────────────────
+        .route("/api/v1/ws", get(routes::ws_signals))
+        .route("/api/v1/signals", get(routes::list_signals))
         .layer(cors)
         .layer(TraceLayer::new_for_http())
         .with_state(state)

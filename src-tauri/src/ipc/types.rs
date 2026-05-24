@@ -98,3 +98,28 @@ pub struct ApiError {
     pub error: String,
     pub correlation_id: Option<String>,
 }
+
+// ── Phase 3 · Workflow signal types ──────────────────────────────────────────
+
+/// Inbound signal sent over WebSocket by the VSCode extension.
+#[derive(Debug, Deserialize)]
+pub struct IncomingSignal {
+    pub signal_type: String,
+    pub project_id: Option<String>,
+    pub file_path: Option<String>,
+    pub language: Option<String>,
+    #[serde(default)]
+    pub payload: serde_json::Value,
+}
+
+/// Query params for `GET /api/v1/signals`.
+#[derive(Debug, Deserialize)]
+pub struct SignalQuery {
+    pub project_id: Option<String>,
+    #[serde(default = "default_signal_limit")]
+    pub limit: u32,
+}
+
+fn default_signal_limit() -> u32 {
+    50
+}

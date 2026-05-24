@@ -1,7 +1,10 @@
 /// Axum route handlers for the HTTP loopback IPC server.
 /// Surfaces: Desktop app + VSCode extension both speak this API.
 use axum::{
-    extract::{Path, Query, State},
+    extract::{
+        ws::{Message, WebSocket, WebSocketUpgrade},
+        Path, Query, State,
+    },
     http::StatusCode,
     response::{
         sse::{Event, KeepAlive, Sse},
@@ -10,15 +13,17 @@ use axum::{
 };
 use futures::stream::StreamExt;
 use std::convert::Infallible;
-use tracing::error;
+use tracing::{error, info};
 use ulid::Ulid;
 
 use crate::{
     engines::mentor::MentorTurnInput,
     ipc::types::{
-        ApiError, CreateProjectRequest, CreateTaskRequest, HealthResponse, LimitQuery,
-        MentorTurnChunk, MentorTurnRequest, UpdateProjectRequest, UpdateTaskRequest,
+        ApiError, CreateProjectRequest, CreateTaskRequest, HealthResponse, IncomingSignal,
+        LimitQuery, MentorTurnChunk, MentorTurnRequest, SignalQuery, UpdateProjectRequest,
+        UpdateTaskRequest,
     },
+    memory::l0::EventKind,
     AppState,
 };
 
@@ -323,6 +328,82 @@ pub async fn get_conversation_messages(
         Ok(msgs) => Json(msgs).into_response(),
         Err(e) => {
             error!(err = %e, id, "get_conversation_messages failed");
+            internal_err(e).into_response()
+        }
+    }
+}
+
+// ── Phase 3 · Workflow signals ─────────────────────────────────────────────────
+
+/// GET /api/v1/ws  (upgraded to WebSocket)
+/// VSCode extension connects here and streams workflow signals.
+pub async fn ws_signals(
+    ws: WebSocketUpgrade,
+    State(state): State<AppState>,
+) -> impl IntoResponse {
+    ws.on_upgrade(move |socket| handle_signal_socket(socket, state))
+}
+
+async fn handle_signal_socket(mut socket: WebSocket, state: AppState) {
+    info!("vscode signal socket connected");
+
+    loop {
+        match socket.recv().await {
+            Some(Ok(Message::Text(text))) => {
+                match serde_json::from_str::<IncomingSignal>(&text) {
+                    Ok(sig) => {
+                        let sig_type = sig.signal_type.clone();
+                        let corr = Ulid::new().to_string();
+                        let payload = if sig.payload.is_null() {
+                            serde_json::Value::Object(Default::default())
+                        } else {
+                            sig.payload
+                        };
+                        match state.memory.l1.record_signal(
+                            sig.signal_type,
+                            sig.project_id,
+                            sig.file_path,
+                            sig.language,
+                            payload,
+                            "vscode".to_string(),
+                        ).await {
+                            Ok(_) => {
+                                state.memory.l0.append_typed(
+                                    &EventKind::WorkflowSignalReceived {
+                                        signal_type: sig_type,
+                                        source: "vscode".to_string(),
+                                    },
+                                    &corr,
+                                    "local",
+                                ).await.ok();
+                            }
+                            Err(e) => error!(err = %e, "failed to record workflow signal"),
+                        }
+                    }
+                    Err(e) => error!(err = %e, "invalid signal payload from vscode ws"),
+                }
+            }
+            Some(Ok(Message::Close(_))) | None => break,
+            Some(Ok(_)) => {} // ping/pong/binary — ignore
+            Some(Err(e)) => {
+                error!(err = %e, "ws signal recv error");
+                break;
+            }
+        }
+    }
+
+    info!("vscode signal socket disconnected");
+}
+
+/// GET /api/v1/signals?project_id=X&limit=N
+pub async fn list_signals(
+    State(state): State<AppState>,
+    Query(q): Query<SignalQuery>,
+) -> impl IntoResponse {
+    match state.memory.l1.recent_signals(q.project_id.as_deref(), q.limit).await {
+        Ok(signals) => Json(signals).into_response(),
+        Err(e) => {
+            error!(err = %e, "list_signals failed");
             internal_err(e).into_response()
         }
     }

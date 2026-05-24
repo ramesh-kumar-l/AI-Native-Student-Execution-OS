@@ -242,3 +242,22 @@ export async function streamMentorTurn(
 export function getAuditRecent(limit = 50): Promise<AuditEntry[]> {
   return apiFetch<AuditEntry[]>(`/api/v1/audit/recent?limit=${limit}`);
 }
+
+// ── Phase 3 · Workflow signals ────────────────────────────────────────────────
+
+export interface WorkflowSignal {
+  id: string;
+  project_id: string | null;
+  signal_type: string;
+  file_path: string | null;
+  language: string | null;
+  payload: Record<string, unknown>;
+  source: string;
+  created_at: number;
+}
+
+export function listSignals(projectId?: string, limit = 50): Promise<WorkflowSignal[]> {
+  const params = new URLSearchParams({ limit: String(limit) });
+  if (projectId) { params.set("project_id", projectId); }
+  return apiFetch<WorkflowSignal[]>(`/api/v1/signals?${params}`);
+}

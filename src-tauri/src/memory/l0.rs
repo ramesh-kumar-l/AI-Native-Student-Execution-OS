@@ -47,6 +47,10 @@ pub enum EventKind {
         chunk_index: u32,
         model: String,
     },
+    WorkflowSignalReceived {
+        signal_type: String,
+        source: String,
+    },
 }
 
 pub struct L0Store {
@@ -100,6 +104,7 @@ impl L0Store {
             EventKind::ConversationCreated { .. } => "conversation_created",
             EventKind::MessageWritten { .. } => "message_written",
             EventKind::EmbeddingIndexed { .. } => "embedding_indexed",
+            EventKind::WorkflowSignalReceived { .. } => "workflow_signal_received",
         };
         let payload = serde_json::to_value(event)?;
         self.append(event_type, &payload, correlation_id, user_id).await

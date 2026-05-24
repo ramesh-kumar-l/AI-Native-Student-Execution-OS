@@ -66,12 +66,28 @@
 | Mentor chat page (SSE streaming + history) | `src/pages/MentorChatPage.tsx` | ✅ |
 | Audit log page (table + expandable metadata) | `src/pages/AuditLogPage.tsx` | ✅ |
 
-## Planned (Phase 3+)
+## Built — Phase 3 VSCode Capability Intelligence Layer
+
+| Component | File(s) | Status |
+| --- | --- | --- |
+| DB: workflow_signals table | `src-tauri/src/db/migrations.rs` | ✅ |
+| L0: WorkflowSignalReceived event kind | `src-tauri/src/memory/l0.rs` | ✅ |
+| L1: WorkflowSignal type + record_signal + recent_signals | `src-tauri/src/memory/l1.rs` | ✅ |
+| IPC types: IncomingSignal + SignalQuery | `src-tauri/src/ipc/types.rs` | ✅ |
+| IPC route: WebSocket /api/v1/ws | `src-tauri/src/ipc/routes.rs` | ✅ |
+| IPC route: GET /api/v1/signals | `src-tauri/src/ipc/routes.rs` | ✅ |
+| Mentor engine: workflow context injection | `src-tauri/src/engines/mentor.rs` | ✅ |
+| API client: WorkflowSignal + listSignals | `src/api.ts` | ✅ |
+| VSCode extension: package.json + tsconfig | `vscode-extension/` | ✅ |
+| VSCode extension: types.ts | `vscode-extension/src/types.ts` | ✅ |
+| VSCode extension: daemon-client.ts (WS + reconnect) | `vscode-extension/src/daemon-client.ts` | ✅ |
+| VSCode extension: signal-capture.ts | `vscode-extension/src/signal-capture.ts` | ✅ |
+| VSCode extension: extension.ts (entry point) | `vscode-extension/src/extension.ts` | ✅ |
+
+## Planned (Phase 4+)
 
 | Component | Status |
 | --- | --- |
-| VSCode extension scaffold | ⏳ Phase 3 |
-| Workflow signal capture | ⏳ Phase 3 |
 | Capability Engine | ⏳ Phase 4 |
 | Artifact Engine | ⏳ Phase 4 |
 | Sync coordinator | ⏳ Phase 5 |
