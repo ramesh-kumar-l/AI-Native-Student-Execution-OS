@@ -7,6 +7,8 @@ import { MentorChatPage } from "./pages/MentorChatPage";
 import { AuditLogPage } from "./pages/AuditLogPage";
 import { CapabilityPage } from "./pages/CapabilityPage";
 import { ArtifactsPage } from "./pages/ArtifactsPage";
+import { TrustPage } from "./pages/TrustPage";
+import { SyncPage } from "./pages/SyncPage";
 import { listProjects, type Project } from "./api";
 
 export type NavState =
@@ -15,7 +17,9 @@ export type NavState =
   | { page: "mentor"; conversationId?: string; projectId?: string }
   | { page: "audit" }
   | { page: "capability"; projectId?: string }
-  | { page: "artifacts" };
+  | { page: "artifacts" }
+  | { page: "trust" }
+  | { page: "sync" };
 
 export default function App() {
   const [nav, setNav] = useState<NavState>({ page: "projects" });
@@ -68,6 +72,8 @@ export default function App() {
             <CapabilityPage projectId={nav.projectId} />
           )}
           {nav.page === "artifacts" && <ArtifactsPage />}
+          {nav.page === "trust" && <TrustPage />}
+          {nav.page === "sync" && <SyncPage />}
         </div>
       </div>
     </>

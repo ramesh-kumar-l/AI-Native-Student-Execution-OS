@@ -1,9 +1,15 @@
 # 40 · Current Phase
 
-## Phase 4 · Capability + Artifact Engines
+## Phase 5 · Sync + Trust Polish
 
 **As of:** 2026-05-24
 **Status:** COMPLETE — all exit criteria met (cargo build ✅, cargo test ✅, npm run build ✅).
+
+---
+
+## Phase 4 · Capability + Artifact Engines
+
+**Status:** COMPLETE (prior phase)
 
 ---
 

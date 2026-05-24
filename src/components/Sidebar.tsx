@@ -53,6 +53,20 @@ export function Sidebar({ nav, projects, onNav }: Props) {
           <span className="item-icon">🗂️</span>
           <span className="item-label">Artifacts</span>
         </button>
+        <button
+          className={`sidebar-item ${nav.page === "trust" ? "active" : ""}`}
+          onClick={() => onNav({ page: "trust" })}
+        >
+          <span className="item-icon">🔒</span>
+          <span className="item-label">Trust</span>
+        </button>
+        <button
+          className={`sidebar-item ${nav.page === "sync" ? "active" : ""}`}
+          onClick={() => onNav({ page: "sync" })}
+        >
+          <span className="item-icon">⇅</span>
+          <span className="item-label">Sync</span>
+        </button>
       </div>
 
       {projects.length > 0 && (

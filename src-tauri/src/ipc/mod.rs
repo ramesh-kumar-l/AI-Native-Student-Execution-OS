@@ -62,6 +62,13 @@ pub fn create_router(state: AppState) -> Router {
             "/api/v1/artifacts/:id",
             get(routes::get_artifact).delete(routes::delete_artifact),
         )
+        // ── Phase 5 · Trust engine ─────────────────────────────────────────────
+        .route("/api/v1/trust/health", get(routes::trust_health))
+        .route("/api/v1/trust/lineage", get(routes::trust_lineage))
+        // ── Phase 5 · Sync coordinator ─────────────────────────────────────────
+        .route("/api/v1/sync/status", get(routes::sync_status))
+        .route("/api/v1/sync/export", post(routes::sync_export))
+        .route("/api/v1/sync/import", post(routes::sync_import))
         .layer(cors)
         .layer(TraceLayer::new_for_http())
         .with_state(state)

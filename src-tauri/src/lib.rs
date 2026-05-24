@@ -1,17 +1,20 @@
 pub mod ai;
 pub mod config;
+pub mod crypto;
 pub mod db;
 pub mod engines;
 pub mod error;
 pub mod ipc;
 pub mod memory;
 pub mod observability;
+pub mod sync;
 
 use std::sync::Arc;
 
 use config::Config;
 use db::Db;
-use engines::{ArtifactEngine, CapabilityEngine, MentorEngine};
+use engines::{ArtifactEngine, CapabilityEngine, MentorEngine, TrustEngine};
+use sync::SyncCoordinator;
 use memory::MemoryStore;
 use observability::AuditLog;
 use tracing::info;
@@ -34,6 +37,8 @@ pub struct AppState {
     pub mentor: Arc<MentorEngine>,
     pub capability: Arc<CapabilityEngine>,
     pub artifact: Arc<ArtifactEngine>,
+    pub trust: Arc<TrustEngine>,
+    pub sync_coordinator: Arc<SyncCoordinator>,
 }
 
 impl AppState {
@@ -63,6 +68,8 @@ impl AppState {
             Arc::clone(&orchestrator),
             Arc::clone(&audit),
         ));
+        let trust = Arc::new(TrustEngine::new(Arc::clone(&db)));
+        let sync_coordinator = Arc::new(SyncCoordinator::new(Arc::clone(&db)));
 
         Ok(Self {
             config: Arc::new(config),
@@ -73,6 +80,8 @@ impl AppState {
             mentor,
             capability,
             artifact,
+            trust,
+            sync_coordinator,
         })
     }
 }

@@ -21,8 +21,8 @@ use crate::{
     ipc::types::{
         ApiError, ArtifactQuery, CapabilityQuery, ComputeCapabilityRequest,
         CreateProjectRequest, CreateTaskRequest, GenerateArtifactRequest, HealthResponse,
-        IncomingSignal, LimitQuery, MentorTurnChunk, MentorTurnRequest, SignalQuery,
-        UpdateProjectRequest, UpdateTaskRequest,
+        IncomingSignal, LimitQuery, LineageQuery, MentorTurnChunk, MentorTurnRequest,
+        SignalQuery, SyncExportRequest, SyncImportRequest, UpdateProjectRequest, UpdateTaskRequest,
     },
     memory::l0::EventKind,
     AppState,
@@ -543,6 +543,77 @@ pub async fn delete_artifact(
         Ok(()) => StatusCode::NO_CONTENT.into_response(),
         Err(e) => {
             error!(err = %e, id, "delete_artifact failed");
+            internal_err(e).into_response()
+        }
+    }
+}
+
+// ── Phase 5 · Trust engine ────────────────────────────────────────────────────
+
+/// GET /api/v1/trust/health
+pub async fn trust_health(State(state): State<AppState>) -> impl IntoResponse {
+    let report = state.trust.health_report().await;
+    Json(report).into_response()
+}
+
+/// GET /api/v1/trust/lineage?limit=N
+pub async fn trust_lineage(
+    State(state): State<AppState>,
+    Query(q): Query<LineageQuery>,
+) -> impl IntoResponse {
+    match state.trust.data_lineage(q.limit).await {
+        Ok(entries) => Json(entries).into_response(),
+        Err(e) => {
+            error!(err = %e, "trust_lineage failed");
+            internal_err(e).into_response()
+        }
+    }
+}
+
+// ── Phase 5 · Sync coordinator ────────────────────────────────────────────────
+
+/// GET /api/v1/sync/status
+pub async fn sync_status(State(state): State<AppState>) -> impl IntoResponse {
+    match state.sync_coordinator.record_counts().await {
+        Ok(counts) => Json(counts).into_response(),
+        Err(e) => {
+            error!(err = %e, "sync_status failed");
+            internal_err(e).into_response()
+        }
+    }
+}
+
+/// POST /api/v1/sync/export
+pub async fn sync_export(
+    State(state): State<AppState>,
+    Json(req): Json<SyncExportRequest>,
+) -> impl IntoResponse {
+    match state
+        .sync_coordinator
+        .export(req.passphrase.as_deref())
+        .await
+    {
+        Ok(payload) => Json(payload).into_response(),
+        Err(e) => {
+            error!(err = %e, "sync_export failed");
+            internal_err(e).into_response()
+        }
+    }
+}
+
+/// POST /api/v1/sync/import
+pub async fn sync_import(
+    State(state): State<AppState>,
+    Json(req): Json<SyncImportRequest>,
+) -> impl IntoResponse {
+    match state
+        .sync_coordinator
+        .import_data(req.payload, req.passphrase.as_deref())
+        .await
+    {
+        Ok(summary) => Json(summary).into_response(),
+        Err(e) => {
+            error!(err = %e, "sync_import failed");
             internal_err(e).into_response()
         }
     }

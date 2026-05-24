@@ -156,3 +156,29 @@ pub struct ArtifactQuery {
 fn default_artifact_limit() -> u32 {
     20
 }
+
+// ── Phase 5 · Trust + Sync types ──────────────────────────────────────────────
+
+/// Query params for `GET /api/v1/trust/lineage`.
+#[derive(Debug, Deserialize)]
+pub struct LineageQuery {
+    #[serde(default = "default_lineage_limit")]
+    pub limit: u32,
+}
+
+fn default_lineage_limit() -> u32 {
+    50
+}
+
+/// Body for `POST /api/v1/sync/export`.
+#[derive(Debug, Deserialize)]
+pub struct SyncExportRequest {
+    pub passphrase: Option<String>,
+}
+
+/// Body for `POST /api/v1/sync/import`.
+#[derive(Debug, Deserialize)]
+pub struct SyncImportRequest {
+    pub payload: serde_json::Value,
+    pub passphrase: Option<String>,
+}

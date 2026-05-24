@@ -54,6 +54,12 @@ async-trait = "0.1"
 # Platform data dirs
 directories = "5"
 
+# Phase 5 · Encryption for sync export/import (AES-256-GCM + Argon2id)
+aes-gcm = "0.10"
+argon2 = "0.5"
+base64 = "0.22"
+rand = "0.8"
+
 [dev-dependencies]
 tokio-test = "0.4"
 tempfile = "3"

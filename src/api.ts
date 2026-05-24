@@ -328,3 +328,77 @@ export function generateArtifact(
 export function deleteArtifact(id: string): Promise<void> {
   return apiFetch<void>(`/api/v1/artifacts/${id}`, { method: "DELETE" });
 }
+
+// ── Phase 5 · Trust Engine ────────────────────────────────────────────────────
+
+export interface HealthReport {
+  daemon_healthy: boolean;
+  db_ok: boolean;
+  uptime_s: number;
+  projects: number;
+  tasks: number;
+  conversations: number;
+  messages: number;
+  signals: number;
+  capability_scores: number;
+  artifacts: number;
+}
+
+export interface LineageEntry {
+  id: string;
+  event_type: string;
+  entity_type: string | null;
+  entity_id: string | null;
+  correlation_id: string;
+  created_at: number;
+  metadata: Record<string, unknown> | null;
+}
+
+export function getTrustHealth(): Promise<HealthReport> {
+  return apiFetch<HealthReport>("/api/v1/trust/health");
+}
+
+export function getTrustLineage(limit = 50): Promise<LineageEntry[]> {
+  return apiFetch<LineageEntry[]>(`/api/v1/trust/lineage?limit=${limit}`);
+}
+
+// ── Phase 5 · Sync Coordinator ────────────────────────────────────────────────
+
+export interface RecordCounts {
+  projects: number;
+  tasks: number;
+  conversations: number;
+  messages: number;
+  capability_scores: number;
+  artifacts: number;
+}
+
+export interface ImportSummary {
+  projects: number;
+  tasks: number;
+  conversations: number;
+  messages: number;
+  capability_scores: number;
+  artifacts: number;
+}
+
+export function getSyncStatus(): Promise<RecordCounts> {
+  return apiFetch<RecordCounts>("/api/v1/sync/status");
+}
+
+export function exportData(passphrase?: string): Promise<unknown> {
+  return apiFetch<unknown>("/api/v1/sync/export", {
+    method: "POST",
+    ...json({ passphrase }),
+  });
+}
+
+export function importData(
+  payload: unknown,
+  passphrase?: string
+): Promise<ImportSummary> {
+  return apiFetch<ImportSummary>("/api/v1/sync/import", {
+    method: "POST",
+    ...json({ payload, passphrase }),
+  });
+}

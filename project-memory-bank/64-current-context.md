@@ -2,7 +2,7 @@
 
 > **This file is loaded first in every new AI session.** It is a compressed orientation — read it, then load only the deeper files you need for your task.
 
-**Last refreshed:** 2026-05-24
+**Last refreshed:** 2026-05-24 (Phase 5 complete)
 **Project owner:** lrameshkumar126
 **Repo:** `E:\ClaudeProjects\AI-Native-Student-Execution-OS` (Apache 2.0)
 
@@ -14,15 +14,19 @@
 
 ## What phase we're in
 
-**Phase 4 · Capability + Artifact Engines** — build gate PASSED; pending manual E2E smoke.
+**Phase 5 · Sync + Trust Polish** — build gate PASSED.
 
 - Stack ADR: **ADR-0002 ACCEPTED** (Tauri 2.x + Rust + SQLite + Ollama + Axum HTTP/SSE).
-- Phases 1–4 fully compiled: `cargo build` ✅ `cargo test` ✅ `npm run build` ✅
-- DB: **Phase 4 tables** — `capability_scores` + `artifacts` on top of P1–P3 schema.
-- API: **22 endpoints** — added 3 capability + 4 artifact endpoints (Phase 4).
-- Engines: **MentorEngine + CapabilityEngine + ArtifactEngine** all wired into AppState.
-- Frontend: **8 pages** — Projects, ProjectDetail, MentorChat, AuditLog, Signals (via Sidebar), Capability, Artifacts.
-- Phase-gate: **build criteria met**; manual E2E smoke (Recompute Scores, Generate Project Page) still needed.
+- **ADR-0003 ACCEPTED** — sqlite-vec deferred; pure-Rust cosine sim stays until native bundling is ready.
+- Phases 1–5 fully compiled: `cargo build` ✅ `cargo test` ✅ `npm run build` ✅
+- DB: same schema; no new tables in Phase 5.
+- API: **27 endpoints** — added 2 trust + 3 sync endpoints (Phase 5).
+- Engines: **MentorEngine + CapabilityEngine + ArtifactEngine + TrustEngine + SyncCoordinator** all wired into AppState.
+- Crypto: **AES-256-GCM + Argon2id** in `src-tauri/src/crypto/mod.rs`.
+- Sync: **export/import** with optional passphrase encryption in `src-tauri/src/sync/mod.rs`.
+- Frontend: **10 pages** — added Trust, Sync.
+- Tauri bundling: **ENABLED** (`bundle.active: true`); full icon set generated from 512x512 source.
+- Mobile: **Phase 6+ scaffold** in `mobile/README.md` — Capacitor.js + Tauri mobile architecture documented.
 
 ## Operating rules for AI sessions
 
