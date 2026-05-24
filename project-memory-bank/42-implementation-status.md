@@ -84,14 +84,35 @@
 | VSCode extension: signal-capture.ts | `vscode-extension/src/signal-capture.ts` | ✅ |
 | VSCode extension: extension.ts (entry point) | `vscode-extension/src/extension.ts` | ✅ |
 
-## Planned (Phase 4+)
+## Built — Phase 4 Capability + Artifact Engines
+
+| Component | File(s) | Status |
+| --- | --- | --- |
+| DB: capability_scores table | `src-tauri/src/db/migrations.rs` | ✅ |
+| DB: artifacts table | `src-tauri/src/db/migrations.rs` | ✅ |
+| L0: CapabilityComputed + ArtifactGenerated events | `src-tauri/src/memory/l0.rs` | ✅ |
+| L1: CapabilityScore entity + insert + latest_scores | `src-tauri/src/memory/l1.rs` | ✅ |
+| L1: Artifact entity + CRUD | `src-tauri/src/memory/l1.rs` | ✅ |
+| Capability Engine (score computation + AI narrative) | `src-tauri/src/engines/capability.rs` | ✅ |
+| Artifact Engine (project page + portfolio export) | `src-tauri/src/engines/artifact.rs` | ✅ |
+| Engines mod: export new engines | `src-tauri/src/engines/mod.rs` | ✅ |
+| AppState: capability + artifact engines | `src-tauri/src/lib.rs` | ✅ |
+| IPC types: capability + artifact request types | `src-tauri/src/ipc/types.rs` | ✅ |
+| IPC routes: 3 capability + 4 artifact endpoints | `src-tauri/src/ipc/routes.rs` | ✅ |
+| IPC router: all 7 new routes wired | `src-tauri/src/ipc/mod.rs` | ✅ |
+| API client: CapabilityScore + Artifact types + fns | `src/api.ts` | ✅ |
+| Capability page (scores + narrative) | `src/pages/CapabilityPage.tsx` | ✅ |
+| Artifacts page (list + generate + preview + download) | `src/pages/ArtifactsPage.tsx` | ✅ |
+| App.tsx: capability + artifacts nav states | `src/App.tsx` | ✅ |
+| Sidebar.tsx: Capability + Artifacts nav links | `src/components/Sidebar.tsx` | ✅ |
+| CSS: capability + artifacts styles | `src/index.css` | ✅ |
+
+## Planned (Phase 5+)
 
 | Component | Status |
 | --- | --- |
-| Capability Engine | ⏳ Phase 4 |
-| Artifact Engine | ⏳ Phase 4 |
 | Sync coordinator | ⏳ Phase 5 |
-| sqlite-vec native extension | ⏳ ADR-0003 (Phase 1.5 or Phase 3) |
+| sqlite-vec native extension | ⏳ ADR-0003 (Phase 1.5 or Phase 5) |
 
 ---
 

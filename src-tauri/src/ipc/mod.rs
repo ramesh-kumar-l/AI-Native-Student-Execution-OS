@@ -49,6 +49,19 @@ pub fn create_router(state: AppState) -> Router {
         // ── Phase 3 · VSCode workflow signals ─────────────────────────────────
         .route("/api/v1/ws", get(routes::ws_signals))
         .route("/api/v1/signals", get(routes::list_signals))
+        // ── Phase 4 · Capability engine ────────────────────────────────────────
+        .route("/api/v1/capability/scores", get(routes::get_capability_scores))
+        .route("/api/v1/capability/compute", post(routes::compute_capability))
+        .route("/api/v1/capability/narrative", get(routes::get_capability_narrative))
+        // ── Phase 4 · Artifact engine ──────────────────────────────────────────
+        // Note: /artifacts/generate must be registered before /artifacts/:id so
+        // the static path wins over the parameterized one.
+        .route("/api/v1/artifacts", get(routes::list_artifacts))
+        .route("/api/v1/artifacts/generate", post(routes::generate_artifact))
+        .route(
+            "/api/v1/artifacts/:id",
+            get(routes::get_artifact).delete(routes::delete_artifact),
+        )
         .layer(cors)
         .layer(TraceLayer::new_for_http())
         .with_state(state)

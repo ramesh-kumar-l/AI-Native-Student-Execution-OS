@@ -133,5 +133,36 @@ pub fn run(conn: &Connection) -> rusqlite::Result<()> {
             ON workflow_signals(created_at DESC);",
     )?;
 
+    // ── Phase 4 · Capability scores & Artifacts ──────────────────────────────
+    conn.execute_batch(
+        "CREATE TABLE IF NOT EXISTS capability_scores (
+            id          TEXT PRIMARY KEY,
+            skill       TEXT NOT NULL,
+            score       INTEGER NOT NULL,   -- 0-100
+            basis       TEXT NOT NULL DEFAULT '{}',  -- JSON: which signals contributed
+            project_id  TEXT,               -- NULL = cross-project aggregate
+            computed_at INTEGER NOT NULL
+        );
+        CREATE INDEX IF NOT EXISTS idx_cap_scores_project
+            ON capability_scores(project_id, skill, computed_at DESC);
+        CREATE INDEX IF NOT EXISTS idx_cap_scores_recent
+            ON capability_scores(computed_at DESC);
+
+        CREATE TABLE IF NOT EXISTS artifacts (
+            id            TEXT PRIMARY KEY,
+            project_id    TEXT,
+            artifact_type TEXT NOT NULL,    -- 'project_page','portfolio_export','capability_narrative'
+            title         TEXT NOT NULL,
+            content       TEXT NOT NULL,    -- markdown
+            format        TEXT NOT NULL DEFAULT 'markdown',
+            created_at    INTEGER NOT NULL,
+            updated_at    INTEGER NOT NULL
+        );
+        CREATE INDEX IF NOT EXISTS idx_artifacts_project
+            ON artifacts(project_id, created_at DESC);
+        CREATE INDEX IF NOT EXISTS idx_artifacts_type
+            ON artifacts(artifact_type, created_at DESC);",
+    )?;
+
     Ok(())
 }

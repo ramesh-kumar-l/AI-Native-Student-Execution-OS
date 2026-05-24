@@ -2,7 +2,7 @@
 
 > **This file is loaded first in every new AI session.** It is a compressed orientation — read it, then load only the deeper files you need for your task.
 
-**Last refreshed:** 2026-05-23
+**Last refreshed:** 2026-05-24
 **Project owner:** lrameshkumar126
 **Repo:** `E:\ClaudeProjects\AI-Native-Student-Execution-OS` (Apache 2.0)
 
@@ -14,14 +14,15 @@
 
 ## What phase we're in
 
-**Phase 2 · Desktop UI MVP** — in progress.
+**Phase 4 · Capability + Artifact Engines** — build gate PASSED; pending manual E2E smoke.
 
 - Stack ADR: **ADR-0002 ACCEPTED** (Tauri 2.x + Rust + SQLite + Ollama + Axum HTTP/SSE).
-- Daemon: **fully implemented** — Phase 1 + Phase 2 backend complete.
-- DB: **Phase 2 tables added** — `projects` + `tasks` on top of Phase 1 (L0/L1/L2/audit).
-- API: **15 endpoints** — health, mentor/turn (SSE), audit/recent, CRUD for projects/tasks, conversations/messages.
-- Frontend: **full React UI** — app shell, sidebar, projects, tasks, mentor chat (SSE), audit log, status banner.
-- Phase-gate: **pending exit** — `cargo build` + `npm run build` must pass; full E2E smoke needed.
+- Phases 1–4 fully compiled: `cargo build` ✅ `cargo test` ✅ `npm run build` ✅
+- DB: **Phase 4 tables** — `capability_scores` + `artifacts` on top of P1–P3 schema.
+- API: **22 endpoints** — added 3 capability + 4 artifact endpoints (Phase 4).
+- Engines: **MentorEngine + CapabilityEngine + ArtifactEngine** all wired into AppState.
+- Frontend: **8 pages** — Projects, ProjectDetail, MentorChat, AuditLog, Signals (via Sidebar), Capability, Artifacts.
+- Phase-gate: **build criteria met**; manual E2E smoke (Recompute Scores, Generate Project Page) still needed.
 
 ## Operating rules for AI sessions
 

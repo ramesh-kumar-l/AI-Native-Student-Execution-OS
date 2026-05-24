@@ -51,6 +51,16 @@ pub enum EventKind {
         signal_type: String,
         source: String,
     },
+    CapabilityComputed {
+        skill: String,
+        score: i64,
+        project_id: Option<String>,
+    },
+    ArtifactGenerated {
+        artifact_id: String,
+        artifact_type: String,
+        project_id: Option<String>,
+    },
 }
 
 pub struct L0Store {
@@ -105,6 +115,8 @@ impl L0Store {
             EventKind::MessageWritten { .. } => "message_written",
             EventKind::EmbeddingIndexed { .. } => "embedding_indexed",
             EventKind::WorkflowSignalReceived { .. } => "workflow_signal_received",
+            EventKind::CapabilityComputed { .. } => "capability_computed",
+            EventKind::ArtifactGenerated { .. } => "artifact_generated",
         };
         let payload = serde_json::to_value(event)?;
         self.append(event_type, &payload, correlation_id, user_id).await

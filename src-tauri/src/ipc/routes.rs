@@ -19,9 +19,10 @@ use ulid::Ulid;
 use crate::{
     engines::mentor::MentorTurnInput,
     ipc::types::{
-        ApiError, CreateProjectRequest, CreateTaskRequest, HealthResponse, IncomingSignal,
-        LimitQuery, MentorTurnChunk, MentorTurnRequest, SignalQuery, UpdateProjectRequest,
-        UpdateTaskRequest,
+        ApiError, ArtifactQuery, CapabilityQuery, ComputeCapabilityRequest,
+        CreateProjectRequest, CreateTaskRequest, GenerateArtifactRequest, HealthResponse,
+        IncomingSignal, LimitQuery, MentorTurnChunk, MentorTurnRequest, SignalQuery,
+        UpdateProjectRequest, UpdateTaskRequest,
     },
     memory::l0::EventKind,
     AppState,
@@ -404,6 +405,144 @@ pub async fn list_signals(
         Ok(signals) => Json(signals).into_response(),
         Err(e) => {
             error!(err = %e, "list_signals failed");
+            internal_err(e).into_response()
+        }
+    }
+}
+
+// ── Phase 4 · Capability engine ───────────────────────────────────────────────
+
+/// GET /api/v1/capability/scores?project_id=X
+pub async fn get_capability_scores(
+    State(state): State<AppState>,
+    Query(q): Query<CapabilityQuery>,
+) -> impl IntoResponse {
+    match state.memory.l1.latest_scores(q.project_id.as_deref()).await {
+        Ok(scores) => Json(scores).into_response(),
+        Err(e) => {
+            error!(err = %e, "get_capability_scores failed");
+            internal_err(e).into_response()
+        }
+    }
+}
+
+/// POST /api/v1/capability/compute
+pub async fn compute_capability(
+    State(state): State<AppState>,
+    Json(req): Json<ComputeCapabilityRequest>,
+) -> impl IntoResponse {
+    let correlation_id = Ulid::new().to_string();
+    match state.capability.compute_scores(req.project_id.as_deref(), &correlation_id).await {
+        Ok(scores) => Json(scores).into_response(),
+        Err(e) => {
+            error!(err = %e, "compute_capability failed");
+            internal_err(e).into_response()
+        }
+    }
+}
+
+/// GET /api/v1/capability/narrative?project_id=X
+pub async fn get_capability_narrative(
+    State(state): State<AppState>,
+    Query(q): Query<CapabilityQuery>,
+) -> impl IntoResponse {
+    let correlation_id = Ulid::new().to_string();
+    match state.capability.generate_narrative(q.project_id.as_deref(), &correlation_id).await {
+        Ok(narrative) => Json(serde_json::json!({ "narrative": narrative })).into_response(),
+        Err(e) => {
+            error!(err = %e, "get_capability_narrative failed");
+            internal_err(e).into_response()
+        }
+    }
+}
+
+// ── Phase 4 · Artifact engine ─────────────────────────────────────────────────
+
+/// GET /api/v1/artifacts?project_id=X&limit=N
+pub async fn list_artifacts(
+    State(state): State<AppState>,
+    Query(q): Query<ArtifactQuery>,
+) -> impl IntoResponse {
+    match state.memory.l1.list_artifacts(q.project_id.as_deref(), q.limit).await {
+        Ok(artifacts) => Json(artifacts).into_response(),
+        Err(e) => {
+            error!(err = %e, "list_artifacts failed");
+            internal_err(e).into_response()
+        }
+    }
+}
+
+/// GET /api/v1/artifacts/:id
+pub async fn get_artifact(
+    State(state): State<AppState>,
+    Path(id): Path<String>,
+) -> impl IntoResponse {
+    match state.memory.l1.get_artifact(&id).await {
+        Ok(Some(artifact)) => Json(artifact).into_response(),
+        Ok(None) => not_found("artifact not found").into_response(),
+        Err(e) => {
+            error!(err = %e, id, "get_artifact failed");
+            internal_err(e).into_response()
+        }
+    }
+}
+
+/// POST /api/v1/artifacts/generate
+pub async fn generate_artifact(
+    State(state): State<AppState>,
+    Json(req): Json<GenerateArtifactRequest>,
+) -> impl IntoResponse {
+    let correlation_id = Ulid::new().to_string();
+    let result = match req.artifact_type.as_str() {
+        "project_page" => {
+            let Some(pid) = req.project_id.as_deref() else {
+                return (
+                    StatusCode::BAD_REQUEST,
+                    Json(ApiError {
+                        error: "project_id required for project_page artifact".to_string(),
+                        correlation_id: Some(correlation_id),
+                    }),
+                )
+                    .into_response();
+            };
+            state.artifact.generate_project_page(pid, &correlation_id).await
+        }
+        "portfolio_export" => {
+            state
+                .artifact
+                .generate_portfolio_export(req.project_id.as_deref(), &correlation_id)
+                .await
+        }
+        _ => {
+            return (
+                StatusCode::BAD_REQUEST,
+                Json(ApiError {
+                    error: format!("unknown artifact_type: {}", req.artifact_type),
+                    correlation_id: Some(correlation_id),
+                }),
+            )
+                .into_response();
+        }
+    };
+
+    match result {
+        Ok(artifact) => (StatusCode::CREATED, Json(artifact)).into_response(),
+        Err(e) => {
+            error!(err = %e, "generate_artifact failed");
+            internal_err(e).into_response()
+        }
+    }
+}
+
+/// DELETE /api/v1/artifacts/:id
+pub async fn delete_artifact(
+    State(state): State<AppState>,
+    Path(id): Path<String>,
+) -> impl IntoResponse {
+    match state.memory.l1.delete_artifact(&id).await {
+        Ok(()) => StatusCode::NO_CONTENT.into_response(),
+        Err(e) => {
+            error!(err = %e, id, "delete_artifact failed");
             internal_err(e).into_response()
         }
     }

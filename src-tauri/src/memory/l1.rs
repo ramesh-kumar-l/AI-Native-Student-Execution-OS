@@ -625,8 +625,9 @@ impl L1Store {
                          FROM workflow_signals WHERE project_id=?1
                          ORDER BY created_at DESC LIMIT ?2",
                     )?;
-                    stmt.query_map(rusqlite::params![pid, limit], signal_from_row)?
-                        .collect::<rusqlite::Result<Vec<_>>>()?
+                    let collected = stmt.query_map(rusqlite::params![pid, limit], signal_from_row)?
+                        .collect::<rusqlite::Result<Vec<_>>>()?;
+                    collected
                 } else {
                     let mut stmt = conn.prepare(
                         "SELECT id, project_id, signal_type, file_path, language,
@@ -634,8 +635,9 @@ impl L1Store {
                          FROM workflow_signals
                          ORDER BY created_at DESC LIMIT ?1",
                     )?;
-                    stmt.query_map(rusqlite::params![limit], signal_from_row)?
-                        .collect::<rusqlite::Result<Vec<_>>>()?
+                    let collected = stmt.query_map(rusqlite::params![limit], signal_from_row)?
+                        .collect::<rusqlite::Result<Vec<_>>>()?;
+                    collected
                 };
                 Ok(rows)
             })
@@ -656,5 +658,236 @@ fn signal_from_row(row: &rusqlite::Row<'_>) -> rusqlite::Result<WorkflowSignal> 
             .unwrap_or(serde_json::Value::Object(Default::default())),
         source: row.get(6)?,
         created_at: row.get(7)?,
+    })
+}
+
+// ── CapabilityScore entity ────────────────────────────────────────────────────
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CapabilityScore {
+    pub id: String,
+    pub skill: String,
+    pub score: i64,
+    pub basis: serde_json::Value,
+    pub project_id: Option<String>,
+    pub computed_at: i64,
+}
+
+impl L1Store {
+    pub async fn insert_capability_score(
+        &self,
+        skill: String,
+        score: i64,
+        basis: String,
+        project_id: Option<String>,
+    ) -> crate::error::Result<CapabilityScore> {
+        let id = Ulid::new().to_string();
+        let now = Utc::now().timestamp_millis();
+        let basis_json = serde_json::json!({ "description": basis });
+        let basis_str = basis_json.to_string();
+        let cs = CapabilityScore {
+            id: id.clone(),
+            skill: skill.clone(),
+            score,
+            basis: basis_json,
+            project_id: project_id.clone(),
+            computed_at: now,
+        };
+        self.db
+            .conn
+            .call(move |conn| {
+                conn.execute(
+                    "INSERT INTO capability_scores (id, skill, score, basis, project_id, computed_at)
+                     VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
+                    rusqlite::params![id, skill, score, basis_str, project_id, now],
+                )?;
+                Ok(())
+            })
+            .await?;
+        Ok(cs)
+    }
+
+    /// Returns the most recently computed score for each skill.
+    pub async fn latest_scores(
+        &self,
+        project_id: Option<&str>,
+    ) -> crate::error::Result<Vec<CapabilityScore>> {
+        let project_id = project_id.map(|s| s.to_string());
+        let scores = self
+            .db
+            .conn
+            .call(move |conn| {
+                let rows: Vec<CapabilityScore> = if let Some(pid) = project_id {
+                    let mut stmt = conn.prepare(
+                        "SELECT id, skill, score, basis, project_id, computed_at
+                         FROM capability_scores c1
+                         WHERE c1.project_id = ?1
+                           AND c1.computed_at = (
+                               SELECT MAX(c2.computed_at) FROM capability_scores c2
+                               WHERE c2.project_id = ?1 AND c2.skill = c1.skill
+                           )
+                         ORDER BY c1.skill",
+                    )?;
+                    let collected = stmt.query_map(rusqlite::params![pid], score_from_row)?
+                        .collect::<rusqlite::Result<Vec<_>>>()?;
+                    collected
+                } else {
+                    let mut stmt = conn.prepare(
+                        "SELECT id, skill, score, basis, project_id, computed_at
+                         FROM capability_scores c1
+                         WHERE c1.project_id IS NULL
+                           AND c1.computed_at = (
+                               SELECT MAX(c2.computed_at) FROM capability_scores c2
+                               WHERE c2.project_id IS NULL AND c2.skill = c1.skill
+                           )
+                         ORDER BY c1.skill",
+                    )?;
+                    let collected = stmt.query_map(rusqlite::params![], score_from_row)?
+                        .collect::<rusqlite::Result<Vec<_>>>()?;
+                    collected
+                };
+                Ok(rows)
+            })
+            .await?;
+        Ok(scores)
+    }
+}
+
+fn score_from_row(row: &rusqlite::Row<'_>) -> rusqlite::Result<CapabilityScore> {
+    let basis_str: String = row.get(3)?;
+    Ok(CapabilityScore {
+        id: row.get(0)?,
+        skill: row.get(1)?,
+        score: row.get(2)?,
+        basis: serde_json::from_str(&basis_str).unwrap_or(serde_json::Value::String(basis_str)),
+        project_id: row.get(4)?,
+        computed_at: row.get(5)?,
+    })
+}
+
+// ── Artifact entity ───────────────────────────────────────────────────────────
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Artifact {
+    pub id: String,
+    pub project_id: Option<String>,
+    pub artifact_type: String,
+    pub title: String,
+    pub content: String,
+    pub format: String,
+    pub created_at: i64,
+    pub updated_at: i64,
+}
+
+impl L1Store {
+    pub async fn create_artifact(
+        &self,
+        project_id: Option<String>,
+        artifact_type: String,
+        title: String,
+        content: String,
+        format: String,
+    ) -> crate::error::Result<Artifact> {
+        let id = Ulid::new().to_string();
+        let now = Utc::now().timestamp_millis();
+        let artifact = Artifact {
+            id: id.clone(),
+            project_id: project_id.clone(),
+            artifact_type: artifact_type.clone(),
+            title: title.clone(),
+            content: content.clone(),
+            format: format.clone(),
+            created_at: now,
+            updated_at: now,
+        };
+        self.db
+            .conn
+            .call(move |conn| {
+                conn.execute(
+                    "INSERT INTO artifacts
+                        (id, project_id, artifact_type, title, content, format, created_at, updated_at)
+                     VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
+                    rusqlite::params![id, project_id, artifact_type, title, content, format, now, now],
+                )?;
+                Ok(())
+            })
+            .await?;
+        Ok(artifact)
+    }
+
+    pub async fn list_artifacts(
+        &self,
+        project_id: Option<&str>,
+        limit: u32,
+    ) -> crate::error::Result<Vec<Artifact>> {
+        let project_id = project_id.map(|s| s.to_string());
+        let artifacts = self
+            .db
+            .conn
+            .call(move |conn| {
+                let rows: Vec<Artifact> = if let Some(pid) = project_id {
+                    let mut stmt = conn.prepare(
+                        "SELECT id, project_id, artifact_type, title, content, format, created_at, updated_at
+                         FROM artifacts WHERE project_id = ?1
+                         ORDER BY created_at DESC LIMIT ?2",
+                    )?;
+                    let collected = stmt.query_map(rusqlite::params![pid, limit], artifact_from_row)?
+                        .collect::<rusqlite::Result<Vec<_>>>()?;
+                    collected
+                } else {
+                    let mut stmt = conn.prepare(
+                        "SELECT id, project_id, artifact_type, title, content, format, created_at, updated_at
+                         FROM artifacts ORDER BY created_at DESC LIMIT ?1",
+                    )?;
+                    let collected = stmt.query_map(rusqlite::params![limit], artifact_from_row)?
+                        .collect::<rusqlite::Result<Vec<_>>>()?;
+                    collected
+                };
+                Ok(rows)
+            })
+            .await?;
+        Ok(artifacts)
+    }
+
+    pub async fn get_artifact(&self, id: &str) -> crate::error::Result<Option<Artifact>> {
+        let id = id.to_string();
+        let result = self
+            .db
+            .conn
+            .call(move |conn| {
+                let mut stmt = conn.prepare(
+                    "SELECT id, project_id, artifact_type, title, content, format, created_at, updated_at
+                     FROM artifacts WHERE id = ?1",
+                )?;
+                let mut rows = stmt.query_map(rusqlite::params![id], artifact_from_row)?;
+                Ok(rows.next().transpose()?)
+            })
+            .await?;
+        Ok(result)
+    }
+
+    pub async fn delete_artifact(&self, id: &str) -> crate::error::Result<()> {
+        let id = id.to_string();
+        self.db
+            .conn
+            .call(move |conn| {
+                conn.execute("DELETE FROM artifacts WHERE id = ?1", rusqlite::params![id])?;
+                Ok(())
+            })
+            .await?;
+        Ok(())
+    }
+}
+
+fn artifact_from_row(row: &rusqlite::Row<'_>) -> rusqlite::Result<Artifact> {
+    Ok(Artifact {
+        id: row.get(0)?,
+        project_id: row.get(1)?,
+        artifact_type: row.get(2)?,
+        title: row.get(3)?,
+        content: row.get(4)?,
+        format: row.get(5)?,
+        created_at: row.get(6)?,
+        updated_at: row.get(7)?,
     })
 }

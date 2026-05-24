@@ -39,6 +39,20 @@ export function Sidebar({ nav, projects, onNav }: Props) {
           <span className="item-icon">📋</span>
           <span className="item-label">Audit Log</span>
         </button>
+        <button
+          className={`sidebar-item ${nav.page === "capability" ? "active" : ""}`}
+          onClick={() => onNav({ page: "capability" })}
+        >
+          <span className="item-icon">📈</span>
+          <span className="item-label">Capability</span>
+        </button>
+        <button
+          className={`sidebar-item ${nav.page === "artifacts" ? "active" : ""}`}
+          onClick={() => onNav({ page: "artifacts" })}
+        >
+          <span className="item-icon">🗂️</span>
+          <span className="item-label">Artifacts</span>
+        </button>
       </div>
 
       {projects.length > 0 && (

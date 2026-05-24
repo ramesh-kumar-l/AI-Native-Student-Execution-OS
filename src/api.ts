@@ -261,3 +261,70 @@ export function listSignals(projectId?: string, limit = 50): Promise<WorkflowSig
   if (projectId) { params.set("project_id", projectId); }
   return apiFetch<WorkflowSignal[]>(`/api/v1/signals?${params}`);
 }
+
+// ── Phase 4 · Capability Engine ───────────────────────────────────────────────
+
+export interface CapabilityScore {
+  id: string;
+  skill: string;
+  score: number;
+  basis: Record<string, unknown>;
+  project_id: string | null;
+  computed_at: number;
+}
+
+export function listCapabilityScores(projectId?: string): Promise<CapabilityScore[]> {
+  const params = new URLSearchParams();
+  if (projectId) params.set("project_id", projectId);
+  return apiFetch<CapabilityScore[]>(`/api/v1/capability/scores?${params}`);
+}
+
+export function computeCapabilityScores(projectId?: string): Promise<CapabilityScore[]> {
+  return apiFetch<CapabilityScore[]>("/api/v1/capability/compute", {
+    method: "POST",
+    ...json({ project_id: projectId }),
+  });
+}
+
+export function getCapabilityNarrative(projectId?: string): Promise<{ narrative: string }> {
+  const params = new URLSearchParams();
+  if (projectId) params.set("project_id", projectId);
+  return apiFetch<{ narrative: string }>(`/api/v1/capability/narrative?${params}`);
+}
+
+// ── Phase 4 · Artifact Engine ─────────────────────────────────────────────────
+
+export interface Artifact {
+  id: string;
+  project_id: string | null;
+  artifact_type: "project_page" | "portfolio_export" | "capability_narrative";
+  title: string;
+  content: string;
+  format: string;
+  created_at: number;
+  updated_at: number;
+}
+
+export function listArtifacts(projectId?: string, limit = 20): Promise<Artifact[]> {
+  const params = new URLSearchParams({ limit: String(limit) });
+  if (projectId) params.set("project_id", projectId);
+  return apiFetch<Artifact[]>(`/api/v1/artifacts?${params}`);
+}
+
+export function getArtifact(id: string): Promise<Artifact> {
+  return apiFetch<Artifact>(`/api/v1/artifacts/${id}`);
+}
+
+export function generateArtifact(
+  artifactType: "project_page" | "portfolio_export",
+  projectId?: string
+): Promise<Artifact> {
+  return apiFetch<Artifact>("/api/v1/artifacts/generate", {
+    method: "POST",
+    ...json({ artifact_type: artifactType, project_id: projectId }),
+  });
+}
+
+export function deleteArtifact(id: string): Promise<void> {
+  return apiFetch<void>(`/api/v1/artifacts/${id}`, { method: "DELETE" });
+}

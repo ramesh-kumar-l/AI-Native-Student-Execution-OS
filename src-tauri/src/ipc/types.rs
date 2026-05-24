@@ -123,3 +123,36 @@ pub struct SignalQuery {
 fn default_signal_limit() -> u32 {
     50
 }
+
+// ── Phase 4 · Capability + Artifact types ─────────────────────────────────────
+
+/// Query params for `GET /api/v1/capability/scores` and `GET /api/v1/capability/narrative`.
+#[derive(Debug, Deserialize)]
+pub struct CapabilityQuery {
+    pub project_id: Option<String>,
+}
+
+/// Body for `POST /api/v1/capability/compute`.
+#[derive(Debug, Deserialize)]
+pub struct ComputeCapabilityRequest {
+    pub project_id: Option<String>,
+}
+
+/// Body for `POST /api/v1/artifacts/generate`.
+#[derive(Debug, Deserialize)]
+pub struct GenerateArtifactRequest {
+    pub artifact_type: String,
+    pub project_id: Option<String>,
+}
+
+/// Query params for `GET /api/v1/artifacts`.
+#[derive(Debug, Deserialize)]
+pub struct ArtifactQuery {
+    pub project_id: Option<String>,
+    #[serde(default = "default_artifact_limit")]
+    pub limit: u32,
+}
+
+fn default_artifact_limit() -> u32 {
+    20
+}

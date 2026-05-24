@@ -11,7 +11,7 @@ use std::sync::Arc;
 
 use config::Config;
 use db::Db;
-use engines::MentorEngine;
+use engines::{ArtifactEngine, CapabilityEngine, MentorEngine};
 use memory::MemoryStore;
 use observability::AuditLog;
 use tracing::info;
@@ -32,6 +32,8 @@ pub struct AppState {
     pub orchestrator: Arc<Orchestrator>,
     pub audit: Arc<AuditLog>,
     pub mentor: Arc<MentorEngine>,
+    pub capability: Arc<CapabilityEngine>,
+    pub artifact: Arc<ArtifactEngine>,
 }
 
 impl AppState {
@@ -51,6 +53,16 @@ impl AppState {
             Arc::clone(&orchestrator),
             Arc::clone(&audit),
         ));
+        let capability = Arc::new(CapabilityEngine::new(
+            Arc::clone(&memory),
+            Arc::clone(&orchestrator),
+            Arc::clone(&audit),
+        ));
+        let artifact = Arc::new(ArtifactEngine::new(
+            Arc::clone(&memory),
+            Arc::clone(&orchestrator),
+            Arc::clone(&audit),
+        ));
 
         Ok(Self {
             config: Arc::new(config),
@@ -59,6 +71,8 @@ impl AppState {
             orchestrator,
             audit,
             mentor,
+            capability,
+            artifact,
         })
     }
 }

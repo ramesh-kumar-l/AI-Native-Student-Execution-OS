@@ -1,9 +1,9 @@
 # 40 · Current Phase
 
-## Phase 3 · VSCode Capability Intelligence Layer
+## Phase 4 · Capability + Artifact Engines
 
 **As of:** 2026-05-24
-**Status:** In progress — daemon extended with WebSocket + signal storage; VSCode extension scaffolded.
+**Status:** COMPLETE — all exit criteria met (cargo build ✅, cargo test ✅, npm run build ✅).
 
 ---
 
@@ -28,9 +28,10 @@ A user can plan a project, hold a mentor conversation, and see today's plan — 
 - [x] Mentor chat page: SSE streaming, routing selector (local/cloud/auto), conversation history load
 - [x] Audit log page: table viewer, expandable metadata, limit selector
 - [x] CSS design system: dark theme, CSS variables, scrollbar, modal, empty states
-- [ ] `cargo build` passes (first-run dependency resolution)
-- [ ] `cargo test -p cognition-daemon` green
-- [ ] Phase-gate summary approved
+- [x] `cargo build` passes (first-run dependency resolution)
+- [x] `cargo test -p cognition-daemon` green (smoke_mentor_turn_streams_response ok)
+- [x] `npm run build` passes (36 modules, 170.87kB JS)
+- [ ] Phase-gate summary approved (pending manual E2E smoke)
 
 ---
 
