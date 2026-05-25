@@ -23,7 +23,7 @@ tower-http = { version = "0.5", features = ["cors", "trace"] }
 tauri = { version = "2", features = [] }
 
 # Database — SQLite via rusqlite bundled (ADR-0002 D-2)
-rusqlite = { version = "0.31", features = ["bundled"] }
+rusqlite = { version = "0.31", features = ["bundled", "load_extension"] }
 tokio-rusqlite = "0.5"
 
 # HTTP client — AI provider calls (Ollama, Claude)
@@ -59,6 +59,7 @@ aes-gcm = "0.10"
 argon2 = "0.5"
 base64 = "0.22"
 rand = "0.8"
+sqlite-vec = "0.1.9"
 
 [dev-dependencies]
 tokio-test = "0.4"
